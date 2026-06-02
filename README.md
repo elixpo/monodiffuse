@@ -56,20 +56,6 @@ The bet: each piece of this has been tried separately before, but never all toge
 it's one of the smallest image generators ever built — and a clear answer to *how far you can push
 a single bit.*
 
----
-
-## Repository structure
-
-```text
-monodiffuse/
-├── monodiffuse/        # Phase 1 — the new fully-1-bit generator (in progress)
-├── experiments/
-│   └── v0_mnist/       # Phase 0 — the original 1-bit study (reproducible)
-├── checkpoints/        # Trained model weights + a sampler script
-├── results/            # Sample images and comparison figures
-├── requirements.txt
-└── LICENSE             # MIT
-```
 
 ---
 
