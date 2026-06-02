@@ -1,99 +1,99 @@
+<h1 align="center">MonoDiffuse</h1>
 
-# Structural Dominance and Topological Stability in 1-Bit Diffusion Models
+<p align="center">
+  <b>How far can a 1-bit neural network go at making pictures?</b>
+</p>
 
-**An empirical investigation into the geometric interpolation regimes of binary-weight diffusion priors.**
+<p align="center">
+  <img src="results/comparison_grid.png" width="640" alt="1-bit vs 16-bit comparison"/><br/>
+  <em>Phase 0 — Top: full-precision model · Bottom: 1-bit model. The shapes survive.</em>
+</p>
 
-![Project Banner](results/comparison_grid.png)
-*(Top: 16-Bit Control | Bottom: 1-Bit Experimental. Note the structural preservation despite binary weights.)*
+---
 
-## 📄 Abstract
-This work investigates the limits of extreme quantization in generative diffusion models by analyzing the representational behavior of a Residual U-Net constrained to 1-bit weights ($\{-1, 1\}$). While prior quantization research has largely focused on large language models, we show that binary-weight diffusion priors can successfully approximate complex multi-class image manifolds without catastrophic mode collapse.
+## What this is
 
-Through controlled experiments on MNIST subsets (single class, binary class, and full ten-class), we observe a consistent trade-off between textural fidelity and structural robustness. Quantitative evaluation demonstrates that 1-bit quantization functions as a strong regularizer: the binarized model achieves a higher **Memorization Score** (Euclidean distance to nearest training neighbor) of **5.89** compared to the FP16 baseline’s **5.54**, indicating reduced overfitting.
+Most AI image generators run on big, high-precision numbers. MonoDiffuse asks the opposite
+question: **what happens if you shrink the network down to a single bit?**
 
-Latent interpolation analysis further reveals a qualitative shift in generation dynamics, where 1-bit models exhibit continuous topological deformation ("curling") rather than the intensity-based interpolation ("fading") characteristic of high-precision networks. Although Frechet MNIST Distance increases under quantization (approximately **425** vs. **241** for FP16), reflecting degraded high-frequency detail, a classifier-based utility evaluation shows that semantic fidelity remains largely preserved, with the 1-bit model achieving a **Legibility Score** of **88.73%** versus **92.22%** for the baseline.
+We're pushing a 1-bit model — the smallest a network can possibly get — to its physical limit as
+an image generator that paints a picture out of pure random noise. It's a research project, built
+in two phases:
 
-These results indicate that extreme quantization preferentially preserves global structure over local texture, suggesting that 1-bit diffusion models constitute a viable and highly compressed structural prior for generative modeling in resource-constrained environments.
+| Phase | The question | Status |
+|------|--------------|--------|
+| **Phase 0** | Can a 1-bit model learn the *shape* of real images without falling apart? | ✅ Done |
+| **Phase 1 — MonoDiffuse** | Take it all the way: a fully 1-bit, color-image generator that's fast to run. | 🚧 In progress |
 
-## 📂 Repository Structure
+---
+
+## What we found so far (Phase 0)
+
+We compared a normal full-precision generator against a 1-bit version on handwritten digits.
+The short version: **the tiny model gives up beauty, but keeps the meaning.**
+
+- **It doesn't just memorize.** The 1-bit model copies *less* from its training data — being small
+  actually keeps it honest.
+- **It keeps the variety.** No collapse into repeating the same few images.
+- **It loses fine texture.** Results look more like clean stencils than photographs.
+- **But it stays readable.** People (and a classifier) can still tell exactly what each image is —
+  almost as easily as with the full-precision model.
+
+There's also a fun quirk in how the two models "morph" one image into another: the big model
+*cross-fades* shapes, while the 1-bit model *bends and curls* them like reshaping a solid object.
+
+---
+
+## Where it's going (Phase 1 · MonoDiffuse)
+
+Phase 1 takes the idea to its extreme and aims for **color** images, with three goals:
+
+1. **Make everything 1-bit**, not just part of the network.
+2. **Start from pure random noise** and let the model build a real picture out of it.
+3. **Keep it fast** — a lightweight "compressor" (a VAE) lets the model run quickly.
+
+The bet: each piece of this has been tried separately before, but never all together. If it works,
+it's one of the smallest image generators ever built — and a clear answer to *how far you can push
+a single bit.*
+
+---
+
+## Repository structure
 
 ```text
-├── models/                     # Trained Model Weights
-│   ├── gen_1bit.pth            # The 1-Bit ResUNet
-│   ├── gen_16bit.pth           # The 16-Bit Control ResUNet
-│   ├── judge_mnist.pth         # The CNN Classifier used for evaluation
-│   └── model_tester.py         # Utility script to load and test models
-│
-├── results/                    # Visual Evidence
-│   ├── comparison_grid.png     # Side-by-side comparison
-│   ├── 16 bit.png              # 16-Bit sample grid
-│   └── 1 bit.png               # 1-Bit sample grid
-│
-├── rigorous_bench_trainer.py   # Main Experiment: Computes FMD & Entropy
-├── simple_bench_trainer.py     # Initial Experiment: Computes Memorization & Diversity
-├── legibility_evaluation.py    # Utility Experiment: Computes Classifier Confidence
-└── README.md
-
+monodiffuse/
+├── monodiffuse/        # Phase 1 — the new fully-1-bit generator (in progress)
+├── experiments/
+│   └── v0_mnist/       # Phase 0 — the original 1-bit study (reproducible)
+├── checkpoints/        # Trained model weights + a sampler script
+├── results/            # Sample images and comparison figures
+├── requirements.txt
+└── LICENSE             # MIT
 ```
 
-## 📊 Key Findings
+---
 
-### 1. Generalization vs. Memorization
-
-We compared a standard **16-Bit (Float16) ResUNet** against a custom **1-Bit (Binary) ResUNet** trained on the full MNIST dataset (0-9).
-
-| Metric | 16-Bit Control | 1-Bit Experimental | Interpretation |
-| --- | --- | --- | --- |
-| **Memorization Score**<br><br>*(Avg Dist to Nearest Neighbor)* | `5.54` | **`5.89`** | Higher is better. The 1-bit model copies *less* from the training set, acting as a regularizer. |
-| **Diversity Score**<br><br>*(Avg Intra-Sample Dist)* | `9.84` | **`9.67`** | Comparable scores indicate the 1-bit model avoids mode collapse despite limited capacity. |
-
-### 2. The "Explosion" vs. "Curling" Phenomenon
-
-High-resolution latent walks reveal a fundamental difference in how the models interpolate concepts:
-
-* **16-Bit Behavior ("Explosion"):** Relying on **intensity interpolation**. Segments of digits dissolve or cross-fade into new shapes.
-* **1-Bit Behavior ("Curling"):** Relying on **geometric interpolation**. The model physically bends and curls the edges of the digit to reshape it, treating the object as a topologically cohesive solid.
-
-### 3. Limitations & Trade-offs (The "Texture Tax")
-
-To rigorously test the limits, we evaluated 2,000 generated samples using a standard CNN-based Frechet MNIST Distance (FMD).
-
-| Metric | 16-Bit Control | 1-Bit Experimental | Gap |
-| --- | --- | --- | --- |
-| **FMD (Realism)** | `241.4` | `425.8` | **~1.7x Penalty** |
-| **Legibility (Utility)** | `92.22%` | `88.73%` | **~3.5% Drop** |
-
-**Conclusion:** The high FMD score confirms that 1-bit models cannot model high-frequency texture (gradients/noise), resulting in a "stencil-like" aesthetic. However, the negligible drop in Legibility proves that **semantic information remains intact**. The model sacrifices beauty, but keeps the truth.
-
-## 🚀 Usage
-
-### Installation
+## Try it
 
 ```bash
-pip install torch torchvision scipy matplotlib tqdm numpy
+pip install -r requirements.txt
 
+# Reproduce the Phase 0 benchmark (trains both models, scores them)
+python experiments/v0_mnist/rigorous_bench_trainer.py
+
+# Generate samples from a saved model
+python checkpoints/model_tester.py
 ```
 
-### Reproducing Experiments
+Phase 1 lives in the `monodiffuse/` package and is under active construction.
 
-**1. Run the Rigorous FMD Benchmark**
-Trains both models from scratch and computes Frechet Distance and Class Entropy.
+---
 
-```bash
-python rigorous_bench_trainer.py
+## Credits
 
-```
+- **Phase 0 (1-bit diffusion study)** — original work by [**@nihal-gazi**](https://github.com/nihal-gazi).
+- **Phase 1 (MonoDiffuse)** — ongoing research building on that foundation.
 
-**2. Run the Utility (Legibility) Test**
-Loads pre-trained models from the `models/` directory and evaluates classifier confidence.
-*(Note: Ensure paths in the script point to your `models/` folder)*
+## License
 
-```bash
-python legibility_evaluation.py
-
-```
-
-## 📜 License
-
-MIT License. Free for academic and commercial use with attribution.
-
+[MIT](LICENSE) — free for academic and commercial use with attribution.
