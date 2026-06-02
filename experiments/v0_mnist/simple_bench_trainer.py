@@ -10,9 +10,12 @@ from torch.amp import GradScaler, autocast
 from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+from pathlib import Path
 
 # --- CONFIG ---
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+ROOT = Path(__file__).resolve().parents[2]
+CKPT = ROOT / "checkpoints"; CKPT.mkdir(exist_ok=True)
 BATCH_SIZE = 128
 EPOCHS = 20          # Increased for full dataset
 LR = 1e-3
@@ -249,8 +252,8 @@ model_1, _ = train_model(ResUNet1Bit, "1-Bit Experimental")
 imgs_1 = generate_samples(model_1, 100)
 
 
-torch.save(model_16.state_dict(), "C:\\Users\\user\Desktop\\AI projects\\1 bit diffusion models\\full mnist\\gen_16AAAbit.pth")
-torch.save(model_1.state_dict(), "C:\\Users\\user\Desktop\\AI projects\\1 bit diffusion models\\full mnist\\gen_1AAAbit.pth")
+torch.save(model_16.state_dict(), str(CKPT / "gen_16AAAbit.pth"))
+torch.save(model_1.state_dict(), str(CKPT / "gen_1AAAbit.pth"))
 
 # C. Visualize
 fig, ax = plt.subplots(2, 8, figsize=(16, 4))

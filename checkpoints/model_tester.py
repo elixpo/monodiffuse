@@ -13,6 +13,7 @@ from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 from scipy.linalg import sqrtm
+from pathlib import Path
 
 # =======================
 # CONFIG
@@ -20,7 +21,10 @@ from scipy.linalg import sqrtm
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 MODEL_QUANT = 1   # set to 1 or 16
 N_SAMPLES = 16
-SAVE_PATH = r"C:\Users\user\Desktop\AI projects\1 bit diffusion models\full mnist\models\generated.png"
+HERE = Path(__file__).resolve().parent          # checkpoints/
+ROOT = HERE.parent                              # repo root
+(ROOT / "results").mkdir(exist_ok=True)
+SAVE_PATH = str(ROOT / "results" / "generated.png")
 
 class SinusoidalPositionEmbeddings(nn.Module):
     def __init__(self, dim):
@@ -137,10 +141,10 @@ class ResUNet1Bit(nn.Module):
 # =======================
 if MODEL_QUANT == 16:
     model = ResUNet16().to(DEVICE)
-    model.load_state_dict(torch.load("gen_16bit.pth", map_location=DEVICE))
+    model.load_state_dict(torch.load(str(HERE / "gen_16bit.pth"), map_location=DEVICE))
 elif MODEL_QUANT == 1:
     model = ResUNet1Bit().to(DEVICE)
-    model.load_state_dict(torch.load("gen_1bit.pth", map_location=DEVICE))
+    model.load_state_dict(torch.load(str(HERE / "gen_1bit.pth"), map_location=DEVICE))
 else:
     raise ValueError("MODEL_QUANT must be 1 or 16")
 

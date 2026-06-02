@@ -5,16 +5,19 @@ import math
 import numpy as np
 from tqdm import tqdm
 import os
+from pathlib import Path
 
 # --- 1. CONFIGURATION ---
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 100 # Batch size for generation
 N_SAMPLES = 1000 # Total images to test per model (Higher = More accurate)
 
-# --- PATHS (Using Raw Strings for Windows Compatibility) ---
-PATH_JUDGE  = r"C:\Users\user\Desktop\AI projects\1 bit diffusion models\full mnist\models\judge_mnist.pth"
-PATH_GEN_1  = r"C:\Users\user\Desktop\AI projects\1 bit diffusion models\full mnist\models\gen_1bit.pth"
-PATH_GEN_16 = r"C:\Users\user\Desktop\AI projects\1 bit diffusion models\full mnist\models\gen_16bit.pth"
+# --- PATHS (repo-relative; resolved from this file's location) ---
+ROOT = Path(__file__).resolve().parents[2]
+CKPT = ROOT / "checkpoints"
+PATH_JUDGE  = str(CKPT / "judge_mnist.pth")
+PATH_GEN_1  = str(CKPT / "gen_1bit.pth")
+PATH_GEN_16 = str(CKPT / "gen_16bit.pth")
 
 # ==========================================
 # 2. ARCHITECTURE DEFINITIONS (REQUIRED TO LOAD WEIGHTS)

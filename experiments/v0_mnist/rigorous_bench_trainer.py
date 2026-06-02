@@ -11,9 +11,12 @@ from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 from scipy.linalg import sqrtm
+from pathlib import Path
 
 # --- CONFIG ---
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+ROOT = Path(__file__).resolve().parents[2]
+CKPT = ROOT / "checkpoints"; CKPT.mkdir(exist_ok=True)
 BATCH_SIZE = 128
 GEN_EPOCHS = 20      # Training time for Diffusion Models
 EVAL_EPOCHS = 5      # Training time for the Judge (Classifier)
@@ -69,7 +72,7 @@ def train_evaluator():
             loss.backward()
             optimizer.step()
     print("Judge trained. Ready to evaluate.")
-    torch.save(model.state_dict(), "C:\\Users\\user\Desktop\\AI projects\\1 bit diffusion models\\full mnist\\judge_mnist.pth")
+    torch.save(model.state_dict(), str(CKPT / "judge_mnist.pth"))
     return model
 
 # ==========================================
@@ -306,7 +309,7 @@ def rigorous_benchmark():
     # 3. Train & Test 16-Bit
     gen_16 = train_generator(ResUNet16, "16-Bit Control")
 
-    torch.save(gen_16.state_dict(), "C:\\Users\\user\Desktop\\AI projects\\1 bit diffusion models\\full mnist\\gen_16bit.pth")
+    torch.save(gen_16.state_dict(), str(CKPT / "gen_16bit.pth"))
 
     feats_16, classes_16 = get_features_and_stats(gen_16, judge, N_SAMPLES)
     
@@ -317,7 +320,7 @@ def rigorous_benchmark():
     # 4. Train & Test 1-Bit
     gen_1 = train_generator(ResUNet1Bit, "1-Bit Experimental")
 
-    torch.save(gen_1.state_dict(), "C:\\Users\\user\Desktop\\AI projects\\1 bit diffusion models\\full mnist\\gen_1bit.pth")
+    torch.save(gen_1.state_dict(), str(CKPT / "gen_1bit.pth"))
 
     feats_1, classes_1 = get_features_and_stats(gen_1, judge, N_SAMPLES)
     
