@@ -1,11 +1,18 @@
-# Core (Phase 0 baseline + Phase 1)
+# MonoDiffuse — Python dependencies
+#
+# Tested with Python 3.10–3.12. For GPU, install the CUDA build of torch from
+# https://pytorch.org/get-started/locally/ (the line below pulls the default wheel).
+
+# --- Core: needed by P1 (logic-gate diffusion) and the Phase 0 baseline ---
 torch>=2.1
 torchvision>=0.16
-numpy
-scipy
-matplotlib
-tqdm
 
-# Phase 1 (MonoDiffuse) extras
-lpips        # perceptual reconstruction loss for the binary VAE
-einops       # tensor reshaping in the binary U-Net / latent grid
+# --- Phase 0 benchmark / eval scripts (experiments/v0_mnist) ---
+numpy
+scipy            # FID / Frechet distance (sqrtm), nearest-neighbour metrics
+matplotlib       # sample grids and plots
+tqdm             # progress bars
+
+# --- Optional, for later phases (not required to run P1) ---
+# difflogic       # official CUDA logic-gate kernels — faster than the bundled
+#                 # pure-PyTorch layers; needs a CUDA toolchain. Add when scaling P2/P3.

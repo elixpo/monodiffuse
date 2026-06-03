@@ -33,3 +33,4 @@ wandb/
 # checkpoints/*.pth are tracked explicitly; new ad-hoc runs are not)
 checkpoints/*AAA*.pth
 checkpoints/*.ckpt
+venv/

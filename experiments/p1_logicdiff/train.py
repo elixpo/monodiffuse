@@ -60,9 +60,11 @@ def binarize(x):
 
 
 @torch.no_grad()
-def denoise_accuracy(model, diff, dl_te, t_bits, device, bins=(8, 64, 128, 200, 255)):
+def denoise_accuracy(model, diff, dl_te, t_bits, device):
     """x0-prediction accuracy at several noise levels, soft and hardened (gate gap)."""
     x0 = binarize(next(iter(dl_te))[0].to(device))
+    # Bins scale with the schedule length so this works for any T (incl. --quick).
+    bins = sorted({int(f * (diff.T - 1)) for f in (0.03, 0.25, 0.5, 0.78, 0.99)})
     out = {}
     for ti in bins:
         t = torch.full((x0.size(0),), ti, device=device, dtype=torch.long)
