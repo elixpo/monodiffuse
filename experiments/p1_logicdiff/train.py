@@ -34,10 +34,11 @@ def get_args():
     p = argparse.ArgumentParser()
     p.add_argument("--epochs", type=int, default=30)
     p.add_argument("--batch", type=int, default=128)
-    p.add_argument("--lr", type=float, default=3e-3)
+    p.add_argument("--lr", type=float, default=1e-2)
     p.add_argument("--T", type=int, default=256)
-    p.add_argument("--depth", type=int, default=4)
-    p.add_argument("--group", type=int, default=4)      # width = 784 * group
+    p.add_argument("--depth", type=int, default=5)
+    p.add_argument("--group", type=int, default=8)      # width = 784 * group
+    p.add_argument("--t_rep", type=int, default=32)     # timestep-bit replication
     p.add_argument("--tau", type=float, default=1.0)
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--quick", action="store_true", help="tiny run to verify plumbing")
@@ -45,6 +46,11 @@ def get_args():
 
 
 def load_bits(batch, quick):
+    # The default LeCun URL is often 404 and the S3 fallback is slow; prefer the
+    # fast/reliable Google CVDF mirror, keeping the originals as fallback.
+    datasets.MNIST.mirrors = (
+        ["https://storage.googleapis.com/cvdf-datasets/mnist/"] + datasets.MNIST.mirrors
+    )
     tf = transforms.Compose([transforms.ToTensor()])  # [0,1]
     train = datasets.MNIST(str(DATA), train=True, download=True, transform=tf)
     test = datasets.MNIST(str(DATA), train=False, download=True, transform=tf)
@@ -87,7 +93,7 @@ def main():
 
     dl_tr, dl_te = load_bits(args.batch, args.quick)
     diff = BernoulliBitFlip(T=args.T, device=dev)
-    model = LogicDenoiser(img_dim=784, t_bits=t_bits, group=args.group,
+    model = LogicDenoiser(img_dim=784, t_bits=t_bits, t_rep=args.t_rep, group=args.group,
                           depth=args.depth, tau=args.tau).to(dev)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     n_params = sum(p.numel() for p in model.parameters())

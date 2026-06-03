@@ -90,22 +90,32 @@ class GroupSumReadout(nn.Module):
 
 
 class LogicDenoiser(nn.Module):
-    """x0-prediction denoiser: (noisy bits, timestep bits) -> P(x0 == 1) per pixel."""
+    """x0-prediction denoiser: (noisy bits, timestep bits) -> P(x0 == 1) per pixel.
 
-    def __init__(self, img_dim=784, t_bits=8, group=4, depth=4, tau=1.0):
+    The timestep code is *replicated* (t_rep copies) and *re-injected at every layer*,
+    so the fixed random wiring reliably samples it. Without this, only ~1% of neurons
+    ever see t and the network is blind to the noise level (flat-across-t accuracy).
+    """
+
+    def __init__(self, img_dim=784, t_bits=8, t_rep=32, group=8, depth=5, tau=1.0):
         super().__init__()
         width = img_dim * group                 # so the readout groups evenly to img_dim
-        self.img_dim, self.t_bits = img_dim, t_bits
-        dims = [img_dim + t_bits] + [width] * depth
+        t_feat = t_bits * t_rep                  # replicated timestep features
+        self.img_dim, self.t_bits, self.t_rep = img_dim, t_bits, t_rep
+        # Every layer's input carries the replicated t features (re-injected each depth).
+        in_dims = [img_dim + t_feat] + [width + t_feat] * (depth - 1)
         self.layers = nn.ModuleList(
-            LogicLayer(dims[i], dims[i + 1], tau=tau, seed=i) for i in range(depth)
+            LogicLayer(in_dims[i], width, tau=tau, seed=i) for i in range(depth)
         )
         self.readout = GroupSumReadout(width, img_dim, scale=1.0)
 
     def forward(self, x_bits, t_bits_enc, harden=False):
-        h = torch.cat([x_bits, t_bits_enc], dim=1)
-        for layer in self.layers:
+        t_feats = t_bits_enc.repeat(1, self.t_rep)   # (B, t_bits * t_rep)
+        h = torch.cat([x_bits, t_feats], dim=1)
+        for i, layer in enumerate(self.layers):
             h = layer(h, harden=harden)
+            if i < len(self.layers) - 1:             # re-inject t before the next layer
+                h = torch.cat([h, t_feats], dim=1)
         return self.readout(h)                   # (B, img_dim) in (0,1)
 
 
