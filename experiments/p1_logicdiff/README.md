@@ -44,6 +44,28 @@ Sample grids are written to `results/p1_samples_epXXX.png`. MNIST downloads to `
 the single argmax gate (true arithmetic-free inference). A large gap = the DLGN **discretization
 gap**, the main thing P2 must close (mitigation: the "Mind the Gap" method, arXiv 2506.07500).
 
+## P2 — convolutional logic gates (after P1's MLP variant failed)
+
+The P1 MLP denoiser (`model.py`) was a **NO-GO**: random all-to-all wiring has no spatial
+locality, so it only learned the average ink-map (centered speckle) and never denoised.
+
+[`kaggle_convlogic.py`](kaggle_convlogic.py) is the fix and the real test: a **convolutional**
+logic-gate denoiser (each gate reads two taps from a local KxK receptive field, gate choice
+shared across space). Self-contained — paste it into a Kaggle notebook.
+
+**Run on Kaggle (recommended — the laptop GPU is too small/slow):**
+1. New notebook → Settings → **Accelerator: GPU (T4)** and **Internet: On** (for MNIST download).
+2. Upload `kaggle_convlogic.py` (Add Data → or paste the file into a cell).
+3. In a cell: `!python kaggle_convlogic.py`  — or paste the file and call `main()`.
+4. First verify with a smoke run: set `CFG["smoke"] = True` (2 epochs) before the full run.
+
+Sample grids land in `results/p2_samples_epXXX.png`.
+
+**P2 GO/NO-GO:** PASS if low-`t` accuracy is **well above 0.87** (e.g. >0.95) *and* the curve
+**drops as `t` grows** (real denoising), with samples showing **digit strokes**. If it's flat
+~0.87 again, convolutional gates also can't denoise diffusion — and that's the signal to rethink
+the whole arithmetic-free angle rather than build further.
+
 ## If it passes / fails
 
 - **PASS →** P2: proper architecture (multi-resolution gate blocks, better t-conditioning,
