@@ -1,11 +1,16 @@
-# MonoDiffuse — Python dependencies
+# MonoDiffuse — Python dependencies  (Python 3.11, NVIDIA GPU / CUDA 12.4)
 #
-# Tested with Python 3.10–3.12. For GPU, install the CUDA build of torch from
-# https://pytorch.org/get-started/locally/ (the line below pulls the default wheel).
+# The line below adds PyTorch's CUDA 12.4 wheel index. The "+cu124" pins force the
+# GPU builds from that index; everything else resolves from PyPI as normal.
+#   pip install -r requirements.txt
+#
+# CPU-only or a different CUDA version? Delete the +cu124 pins (and the line below)
+# and grab the right command from https://pytorch.org/get-started/locally/.
+--extra-index-url https://download.pytorch.org/whl/cu124
 
 # --- Core: needed by P1 (logic-gate diffusion) and the Phase 0 baseline ---
-torch>=2.1
-torchvision>=0.16
+torch==2.5.1+cu124
+torchvision==0.20.1+cu124
 
 # --- Phase 0 benchmark / eval scripts (experiments/v0_mnist) ---
 numpy
