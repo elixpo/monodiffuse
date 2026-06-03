@@ -42,6 +42,8 @@ CFG = dict(
     k=3,
     t_ch=16,                            # timestep planes, re-injected each layer
     out_group=32,                       # final logic channels -> popcount -> per-pixel logit
+    tau_start=1.0,                      # gate-softmax temperature at epoch 0
+    tau_end=0.1,                        # ... annealed to here (sharpens -> closes hard gap)
     smoke=False,                        # True = tiny fast run to verify plumbing
 )
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -88,6 +90,7 @@ class ConvLogicLayer(nn.Module):
         self.register_buffer("M", GATE_COEFFS.clone())   # (16, 4)
         self.w = nn.Parameter(torch.randn(c_out, 16) * 0.1)
         self.c_out = c_out
+        self.tau = 1.0                          # softmax temperature (annealed -> sharp)
 
     def forward(self, x, harden=False):
         B, _, H, W = x.shape
@@ -95,7 +98,8 @@ class ConvLogicLayer(nn.Module):
         a = patches[:, self.ia, :]              # (B, c_out, L)
         b = patches[:, self.ib, :]
         # Collapse the gate mixture to 4 coefficients per channel (a0 + a1*a + a2*b + a3*ab).
-        sel = self.M[self.w.argmax(-1)] if harden else F.softmax(self.w, -1) @ self.M
+        # Lower tau -> sharper gate choice -> soft model converges to the hard (argmax) one.
+        sel = self.M[self.w.argmax(-1)] if harden else F.softmax(self.w / self.tau, -1) @ self.M
         c0, c1, c2, c3 = (sel[:, i].view(1, -1, 1) for i in range(4))  # each (1, c_out, 1)
         out = c0 + c1 * a + c2 * b + c3 * (a * b)
         return out.view(B, self.c_out, H, W)
@@ -115,6 +119,10 @@ class ConvLogicDenoiser(nn.Module):
             c = wd + t_ch                       # re-inject timestep planes each layer
         self.layers = nn.ModuleList(layers)
         self.head = ConvLogicLayer(c, out_group, k=1, seed=99)
+
+    def set_tau(self, tau):
+        for layer in (*self.layers, self.head):
+            layer.tau = tau
 
     def _t_planes(self, t_bits_enc, B, H, W):
         reps = (self.t_ch + self.t_bits - 1) // self.t_bits
@@ -216,8 +224,12 @@ def main(cfg=CFG):
     print(f"[P2] learnable gate-logit params: {sum(p.numel() for p in model.parameters()):,}")
 
     for ep in range(cfg["epochs"]):
+        # Anneal gate-softmax temperature high->low so the soft model converges to hard.
+        frac = ep / max(1, cfg["epochs"] - 1)
+        tau = cfg["tau_start"] * (cfg["tau_end"] / cfg["tau_start"]) ** frac
+        model.set_tau(tau)
         model.train(); run = 0.0
-        bar = tqdm(dl_tr, desc=f"ep {ep + 1}/{cfg['epochs']}", leave=False)
+        bar = tqdm(dl_tr, desc=f"ep {ep + 1}/{cfg['epochs']} tau={tau:.2f}", leave=False)
         for x, _ in bar:
             x0 = binarize(x.to(DEVICE))
             t = torch.randint(0, cfg["T"], (x0.size(0),), device=DEVICE)
@@ -226,7 +238,7 @@ def main(cfg=CFG):
             loss = F.binary_cross_entropy(pred, x0)
             opt.zero_grad(); loss.backward(); opt.step()
             run += loss.item(); bar.set_postfix(bce=f"{loss.item():.4f}")
-        print(f"[P2] epoch {ep + 1}/{cfg['epochs']}  bce={run / len(dl_tr):.4f}", flush=True)
+        print(f"[P2] epoch {ep + 1}/{cfg['epochs']}  tau={tau:.3f}  bce={run / len(dl_tr):.4f}", flush=True)
         if (ep + 1) % max(1, cfg["epochs"] // 8) == 0 or ep == cfg["epochs"] - 1:
             model.eval()
             s = diff.sample(model, 64, t_bits).view(64, 1, 28, 28)
