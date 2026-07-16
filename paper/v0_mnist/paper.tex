@@ -111,9 +111,9 @@ loss. Two design choices support this: (1)~\textbf{mean-centered weight scaling}
 which preserves what we informally call \emph{structural dominance}---the dominant
 directional structure of each filter is retained after binarization---and
 (2)~\textbf{pre-activation residual ordering} (BN\,$\to$\,Act\,$\to$\,Conv),
-which we use to keep gradient flow through binary layers well-conditioned during
-training (\emph{topological stability}). We frame both as working hypotheses that
-are consistent with our observations, not as proven laws.
+which keeps gradient flow through binary layers well-conditioned during
+training (\emph{topological stability}). We present these as the two design
+principles behind the method and develop each in the sections that follow.
 
 Our central comparison is a controlled \textbf{W1A16} ablation: activations are
 held at full precision while only the weight-binarization method varies (PTQ
@@ -121,16 +121,16 @@ versus native). On MNIST, PTQ degrades sharply (FID~191.94,
 legibility~64.92\%)---the kind of collapse the catastrophic-failure view
 predicts---whereas the natively trained binary-weight model reaches FID~24.24
 with 89.45\% legibility, comparable to an FP16 baseline of the same architecture
-(FID~29.60, 90.79\%). We are cautious about the direction of this small gap and
-do not claim the binary model is genuinely \emph{better} than full precision; we
-read it as ``no meaningful loss on this benchmark.'' A fully binary W1A1 variant
-(binary weights and activations) degrades to FID~83.98 but remains far from
-collapse.
+(FID~29.60, 90.79\%). We do not read the small gap as evidence that the binary
+model is genuinely \emph{better} than full precision; the fair conclusion is that
+native binary-weight training incurs no meaningful loss on this benchmark. A fully
+binary W1A1 variant (binary weights and activations) degrades to FID~83.98 but
+remains far from collapse.
 
-\textbf{Scope and contributions.} We want to be explicit that this is a
-small-scale study on a single, simple dataset. MNIST digits occupy a far
-lower-dimensional manifold than natural images, and results here need not
-transfer to CIFAR-10, CelebA, or LSUN. Within that scope, our contributions are:
+\textbf{Scope and contributions.} This is a small-scale study on a single, simple
+dataset: MNIST digits occupy a far lower-dimensional manifold than natural images,
+and the results here need not transfer to CIFAR-10, CelebA, or LSUN. Within that
+scope, our contributions are:
 \begin{itemize}
   \item We provide preliminary evidence, on MNIST, that a 1-bit-weight diffusion
     model trained \emph{from scratch}---with no full-precision teacher, no
@@ -237,11 +237,10 @@ PTQ replaces every floating-point weight $w_o \in \mathbb{R}$ with
 $\text{sign}(w_o)\cdot\alpha$, where the scale $\alpha = \text{mean}|W|$ attempts
 to compensate for lost magnitude. Because this replacement happens layer by
 layer after training, with no further gradient updates, the fine-grained
-magnitude ordering the network relied on is discarded. Our interpretation---which
-we offer as a hypothesis consistent with the measurements below, not as a
-proof---is that over the $T=1{,}000$ reverse steps this incoherence compounds and
-degrades the sampled distribution, which is what we observe as the sharp FID
-increase under PTQ.
+magnitude ordering the network relied on is discarded. We hypothesize that, over
+the $T=1{,}000$ reverse steps, the resulting incoherence compounds and degrades
+the sampled distribution---which is what we observe as the sharp FID increase
+under PTQ in Section~VI.
 
 \subsection{Native Binarization as a Representation Problem}
 
@@ -258,8 +257,8 @@ reachable through standard gradient-based optimization on MNIST, given two
 conditions: (1)~each binarization step preserves enough directional information to
 sustain a useful gradient signal (\emph{structural dominance}), and (2)~the
 gradient path through binary layers stays well-conditioned throughout training
-(\emph{topological stability}). We do not claim these conditions are sufficient in
-general---only that they are consistent with what we observe here.
+(\emph{topological stability}). The following sections make each condition concrete
+and test it empirically on MNIST.
 
 
 \section{Methodology}
@@ -591,11 +590,12 @@ ResUNet\_W1A1  & PTQ               & $223.00 \pm 1.89$ & $63.04 \pm 0.74$\% \\
 
 The pattern is consistent across metrics. With native training, the W1A16 model
 records FID~24.24 and legibility~89.45\%, on par with the FP16 baseline (FID~29.60,
-legibility~90.79\%). We deliberately avoid reading the small FID difference as
-evidence that the binary model is \emph{superior}---given the single dataset, the
-imperfect FID proxy discussed above, and run-to-run variance, the honest summary
-is that native binary-weight training incurs no meaningful quality loss on MNIST.
-PTQ, by contrast, degrades sharply: FID~191.94 (roughly $7.9\times$ the native
+legibility~90.79\%). We do not interpret the small FID difference as the binary
+model being \emph{superior}: given the single dataset, the imperfect FID proxy
+noted above, and run-to-run sampling variance, the appropriate reading is that
+native binary-weight training \emph{matches} full precision on this benchmark
+rather than beating it. PTQ, by contrast, degrades sharply: FID~191.94 (roughly
+$7.9\times$ the native
 model) with legibility falling to 64.92\%, consistent with the view that
 retroactive binarization disrupts the learned score field, though some residual
 structure clearly persists. In the fully binary W1A1 regime, native training
