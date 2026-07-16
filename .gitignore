@@ -34,3 +34,6 @@ wandb/
 checkpoints/*AAA*.pth
 checkpoints/*.ckpt
 venv/
+*.fls
+*.fdb_latexmk
+*.aux
