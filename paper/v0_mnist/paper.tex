@@ -40,8 +40,11 @@
 
 \begin{abstract}
 The memory footprint and arithmetic cost of floating-point weights are a
-central obstacle to running generative diffusion models on edge hardware.
-Binarizing weights to a single bit would help on both fronts, but a widely
+central obstacle to running generative diffusion models on edge hardware, and a
+growing contributor to the energy budget of deploying them at scale. Binarizing
+weights to a single bit---replacing multiply--accumulate operations with
+XNOR-popcount logic---would cut both memory and energy substantially, directly
+serving the goals of sustainable, on-device AI. A widely
 held view---articulated most recently by the Binarized Diffusion Model
 (BiDM)~\cite{bidm2024}---is that fully binarizing a diffusion network is
 \emph{catastrophic}, and that recovery requires distilling from a
@@ -67,7 +70,7 @@ support replication.
 \end{abstract}
 
 \noindent\textbf{Keywords:} 1-Bit Quantization, Diffusion Models, Model Compression, Binary Neural Networks,
-Post-Training Quantization, ResUNet, Edge AI, MNIST
+Post-Training Quantization, ResUNet, Edge AI, Sustainable Computing, Green AI, Energy-Efficient Deep Learning, MNIST
 
 \section{Introduction}
 
@@ -78,7 +81,11 @@ their reliance on floating-point matrix arithmetic ties them to power-hungry
 GPUs and server-grade accelerators. With growing interest in on-device
 intelligence---in mobile phones, wearables, and IoT sensors---this dependence is
 a practical concern: executing the hundreds or thousands of sequential denoising
-steps a typical DDPM requires is difficult on an edge processor today.
+steps a typical DDPM requires is difficult on an edge processor today. It is also
+an energy concern: the same floating-point arithmetic that limits deployability
+drives the power draw and carbon cost of running these models, making
+compute-efficient generation a question of sustainable computing as much as of
+device compatibility.
 
 One appealing direction is to push weight precision toward its minimum: a single
 bit. Compressing 16- or 32-bit parameters into $\{-1,+1\}$ values would replace
@@ -732,7 +739,12 @@ and does not yet include specialised binary kernels.
 On MNIST these savings come at little measurable cost to class-level semantic
 quality: with 89.45\% legibility versus 90.79\% for FP16, the W1A16 model produces
 digits that are, at the class level, close to those of the full-precision
-baseline.
+baseline. From a sustainability standpoint, an order-of-magnitude reduction in
+per-operation energy---if realised with dedicated binary kernels---would lower the
+recurring inference cost of diffusion sampling, which is where deployed generative
+models spend most of their energy over a model's lifetime. We view this as the
+practical motivation for pursuing binary diffusion on edge and green-computing
+platforms.
 
 \section{Discussion}
 
@@ -818,6 +830,17 @@ studying further. Whether structural dominance and topological stability continu
 to help at natural-image scale, and across other generative families such as flow
 matching, consistency, and masked diffusion models, is an open question we hope to
 address in future work.
+
+\smallskip\noindent\textbf{Reproducibility.} All results are reproducible from the
+released repository. The three architectures (\texttt{ResUNet\_FP16},
+\texttt{ResUNet\_W1A16}, \texttt{ResUNet\_W1A1}) and the binary primitives
+(\texttt{BitConv2d\_Std}, \texttt{BitConv2d\_BNN}, and the clipped-STE binary
+activation) are defined in a single \texttt{architectures} module. Training
+scripts for the FP16/W1A16 and the W1A1 variants, the post-training quantizers
+that produce the PTQ baselines, and the FID and Legibility benchmarks are provided
+as separate entry points, and a single driver script reproduces the full results
+table end-to-end. Trained checkpoints are released alongside the code so the
+benchmarks can be run without retraining.
 
 \smallskip\noindent\textbf{Code Availability.} Source code and trained checkpoints
 are publicly available at
