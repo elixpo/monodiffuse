@@ -1,3 +1,3 @@
 name: Diffuino
-description: Class-conditioned binary-weight MNIST diffusion animated on the UNO Q LED matrix.
+description: Unconditional binary-weight MNIST diffusion animated on the UNO Q LED matrix.
 icon: 🔢

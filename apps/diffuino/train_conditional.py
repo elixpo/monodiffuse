@@ -25,16 +25,13 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--epochs", type=int, default=12)
     result.add_argument("--batch-size", type=int, default=256)
     result.add_argument("--base-channels", type=int, default=16)
+    result.add_argument("--precision", choices=("fp32", "binary"), default="binary")
     result.add_argument("--learning-rate", type=float, default=2e-4)
     result.add_argument("--seed", type=int, default=0)
     result.add_argument("--workers", type=int, default=2)
     result.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     result.add_argument("--data", type=Path, default=ROOT / "data")
-    result.add_argument(
-        "--output",
-        type=Path,
-        default=ROOT / "apps" / "diffuino" / "models" / "mnist_conditional_w1a32.pt",
-    )
+    result.add_argument("--output", type=Path)
     return result
 
 
@@ -44,7 +41,7 @@ def train(args: argparse.Namespace) -> Path:
     config = ModelConfig(
         image_channels=1,
         base_channels=args.base_channels,
-        binary_weights=True,
+        binary_weights=args.precision == "binary",
         centered=False,
         binary_activations=False,
         preactivation=True,
@@ -93,12 +90,19 @@ def train(args: argparse.Namespace) -> Path:
             }
         )
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
+    output = args.output or (
+        ROOT
+        / "apps"
+        / "diffuino"
+        / "models"
+        / f"mnist_conditional_{'w1a32' if args.precision == 'binary' else 'fp32'}.pt"
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "model": model.cpu().state_dict(),
         "model_config": asdict(config),
         "dataset": "mnist",
-        "variant": "conditional_native_uncentered_pre",
+        "variant": f"conditional_{'native_uncentered_pre' if args.precision == 'binary' else 'fp32'}",
         "seed": args.seed,
         "training": {
             "epochs": args.epochs,
@@ -110,14 +114,14 @@ def train(args: argparse.Namespace) -> Path:
         "history": history,
         "provenance": provenance(),
     }
-    torch.save(payload, args.output)
+    torch.save(payload, output)
     atomic_json(
-        args.output.with_suffix(".json"),
+        output.with_suffix(".json"),
         {key: value for key, value in payload.items() if key != "model"}
-        | {"checkpoint_sha256": sha256(args.output)},
+        | {"checkpoint_sha256": sha256(output)},
     )
-    print(f"saved {args.output}")
-    return args.output
+    print(f"saved {output}")
+    return output
 
 
 if __name__ == "__main__":

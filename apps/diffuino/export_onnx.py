@@ -36,15 +36,20 @@ def materialized_model(checkpoint: Path) -> BinaryDiffusionUNet:
 def export(checkpoint: Path, output: Path) -> Path:
     model = materialized_model(checkpoint)
     output.parent.mkdir(parents=True, exist_ok=True)
+    conditional = model.config.num_classes > 0
+    example_inputs = [
+        torch.zeros(1, 1, 28, 28, dtype=torch.float32),
+        torch.zeros(1, dtype=torch.long),
+    ]
+    input_names = ["image", "timestep"]
+    if conditional:
+        example_inputs.append(torch.zeros(1, dtype=torch.long))
+        input_names.append("label")
     torch.onnx.export(
         model,
-        (
-            torch.zeros(1, 1, 28, 28, dtype=torch.float32),
-            torch.zeros(1, dtype=torch.long),
-            torch.zeros(1, dtype=torch.long),
-        ),
+        tuple(example_inputs),
         output,
-        input_names=["image", "timestep", "label"],
+        input_names=input_names,
         output_names=["predicted_noise"],
         opset_version=17,
         do_constant_folding=True,
@@ -58,12 +63,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=ROOT / "apps" / "diffuino" / "models" / "mnist_conditional_w1a32.pt",
+        default=ROOT
+        / "artifacts"
+        / "v1_binary_study"
+        / "mnist"
+        / "native_uncentered_pre"
+        / "seed_2"
+        / "checkpoint.pt",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=ROOT / "apps" / "diffuino" / "models" / "mnist_conditional_w1a32.onnx",
+        default=ROOT / "apps" / "diffuino" / "models" / "mnist_unconditional_w1a32.onnx",
     )
     arguments = parser.parse_args()
     export(arguments.checkpoint, arguments.output)

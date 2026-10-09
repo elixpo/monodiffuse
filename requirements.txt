@@ -19,6 +19,8 @@ pyarrow          # CIFAR-10 parquet mirror fallback when the upstream tarball is
 matplotlib       # sample grids and plots
 tqdm             # progress bars
 pytest            # reproducibility/unit checks for the controlled study
+onnx==1.23.2      # Diffuino deployment export
+onnxruntime==1.30.0 # Diffuino parity checks and CPU inference
 
 # --- Optional, for later phases (not required to run P1) ---
 # difflogic       # official CUDA logic-gate kernels — faster than the bundled
