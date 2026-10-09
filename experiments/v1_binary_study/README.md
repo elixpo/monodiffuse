@@ -34,7 +34,7 @@ Train the held-out domain encoder and evaluate all checkpoints:
 
 ```bash
 python -m experiments.v1_binary_study.evaluate suite \
-  --dataset mnist --encoder-epochs 10 --eval-samples 2000 --sampling-steps 50
+  --dataset mnist --encoder-epochs 10 --eval-samples 2000 --sampler ddpm
 ```
 
 Evaluation reports feature-space FID and KID, density, coverage, and class-prior
