@@ -14,8 +14,10 @@ U-Net:
 - a W1A1 core whose boundary, normalization, time-conditioning, scaling, and
   residual operations remain floating point.
 
-Every condition uses the same optimizer, training budget, diffusion schedule, and
-ancestral 1,000-step sampler. Results are repeated over training seeds 0, 1, and 2.
+Optimization stages use the same optimizer, 12-epoch budget, diffusion schedule,
+and ancestral 1,000-step sampler. Native and FP32 models receive one stage; PTQ
+adds no optimization after FP32; warm QAT receives an additional 12-epoch binary
+stage after FP32 pretraining. Results are repeated over training seeds 0, 1, and 2.
 
 ## Current finding
 

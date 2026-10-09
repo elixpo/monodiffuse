@@ -9,6 +9,12 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{url}
 
+\hypersetup{
+  pdftitle={Training Binary-Weight Diffusion Models from Scratch: A Controlled MNIST and CIFAR-10 Study},
+  pdfauthor={Nihal Gazi and Ayushman Bhattacharya},
+  pdfkeywords={binary neural networks, diffusion models, quantization-aware training, post-training quantization}
+}
+
 \newcommand{\dfid}{\ensuremath{\mathrm{dFID}}}
 \newcommand{\dkid}{\ensuremath{\mathrm{dKID}}}
 
@@ -36,8 +42,9 @@ conditions. We compare FP32 training, zero-shot PTQ, binary-weight training from
 random initialization, floating-point warm-started quantization-aware training
 (QAT), and a binary-weight/binary-activation core. We additionally cross
 mean-centering with pre- versus post-activation residual ordering. All conditions
-use the same data, optimizer, training budget, and ancestral 1,000-step DDPM
-sampler and are repeated over three training seeds. Evaluation uses a held-out
+use the same data, optimizer, per-stage budget, and ancestral 1,000-step DDPM
+sampler and are repeated over three training seeds; warm QAT additionally
+inherits a 12-epoch FP32 checkpoint. Evaluation uses a held-out
 domain encoder and reports Fr\'echet and kernel distances, density, coverage, and
 class-prior divergence, together with real--real and Gaussian-noise controls.
 On MNIST, the best native W1A32 condition obtains domain-feature Fr\'echet distance
@@ -206,12 +213,17 @@ counts and compatible state dictionaries.
 We use the canonical 60,000/10,000 MNIST split~\cite{lecun1998mnist} and the
 50,000/10,000 CIFAR-10 split~\cite{krizhevsky2009cifar}. Images are scaled to
 $[-1,1]$; CIFAR-10 training uses random crop and horizontal flip. Each condition
-is trained for 12 epochs with AdamW, learning rate $2\times10^{-4}$, weight decay
+is optimized in 12-epoch stages with AdamW, learning rate $2\times10^{-4}$, weight decay
 $10^{-4}$, cosine decay, gradient norm clipping at 1, batch size 256 for MNIST and
 128 for CIFAR-10, and seeds $\{0,1,2\}$. AMP accelerates training, while stored
 parameters and evaluation remain FP32. The sampler is ancestral DDPM with all
 1,000 reverse steps. Each reported model distribution uses 2,000 samples from a
 fixed sampling seed; the training seed changes independently.
+
+Native and FP32 models receive one optimization stage. PTQ adds no training after
+the FP32 stage, whereas warm QAT receives a second 12-epoch stage after loading
+FP32. Thus warm QAT uses 24 total training epochs; its initialization is not
+treated as free compute.
 
 \subsection{Evaluation and controls}
 
