@@ -76,7 +76,7 @@ def run(args: argparse.Namespace) -> None:
         if record is None:
             draw.text((x + 2, y + 2), f"digit {requested}: none", fill=255)
             continue
-        frame = state_to_matrix(record["state"])
+        frame = state_to_matrix(record["state"], digit=requested)
         pixels = frame[:, LEFT_MARGIN : LEFT_MARGIN + DIGIT_SIZE] * 255 // 7
         image = Image.fromarray(pixels, mode="L").resize(
             (tile_size, tile_size), Image.Resampling.NEAREST

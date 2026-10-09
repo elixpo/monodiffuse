@@ -90,7 +90,11 @@ def run(args: argparse.Namespace) -> None:
 
         def on_frame(position: int, timestep: int, state: np.ndarray) -> None:
             nonlocal emitted
-            frame = state_to_matrix(state, levels=args.brightness_levels)
+            frame = state_to_matrix(
+                state,
+                levels=args.brightness_levels,
+                digit=args.digit,
+            )
             if display is not None:
                 display.draw(board_bytes(frame))
             emitted += 1

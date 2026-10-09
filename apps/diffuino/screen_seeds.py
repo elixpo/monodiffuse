@@ -82,7 +82,10 @@ def run(args: argparse.Namespace) -> None:
         )
         pixels = np.clip((state.squeeze() + 1.0) * 127.5, 0, 255).astype(np.uint8)
         images.append(Image.fromarray(pixels, mode="L"))
-        matrix_pixels = state_to_matrix(state)[:, LEFT_MARGIN : LEFT_MARGIN + DIGIT_SIZE]
+        matrix_pixels = state_to_matrix(
+            state,
+            digit=args.digit,
+        )[:, LEFT_MARGIN : LEFT_MARGIN + DIGIT_SIZE]
         matrix_images.append(Image.fromarray(matrix_pixels * 255 // 7, mode="L"))
         print(
             f"seed={seed:4d} predicted={digit} confidence={confidence:6.1%} "

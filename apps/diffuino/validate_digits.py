@@ -38,7 +38,7 @@ def run(args: argparse.Namespace) -> None:
         state = sampler.sample(args.steps, args.seed, args.sampler, label=requested)
         predicted, confidence = classifier.predict(state)
         matches += predicted == requested
-        frame = state_to_matrix(state)
+        frame = state_to_matrix(state, digit=requested)
         pixels = frame[:, LEFT_MARGIN : LEFT_MARGIN + DIGIT_SIZE] * 255 // 7
         image = Image.fromarray(pixels, mode="L").resize(
             (tile_size, tile_size), Image.Resampling.NEAREST

@@ -16,6 +16,7 @@ def state_to_matrix(
     state: np.ndarray,
     levels: int = 8,
     auto_contrast: bool = True,
+    digit: int | None = None,
 ) -> np.ndarray:
     """Return an 8x13 uint8 frame while preserving MNIST's square aspect ratio."""
     if levels < 2 or levels > 256:
@@ -35,6 +36,10 @@ def state_to_matrix(
         if high - low >= 1.0:
             resized = np.clip((resized - low) * (255.0 / (high - low)), 0, 255)
     quantized = np.rint(resized * (levels - 1) / 255.0).astype(np.uint8)
+    if digit == 3:
+        # At 8x8, intermediate grayscale levels optically bridge the openings
+        # in a three. A display-only hard threshold preserves its two cuts.
+        quantized = np.where(quantized >= levels // 2, levels - 1, 0).astype(np.uint8)
     frame = np.zeros((ROWS, COLS), dtype=np.uint8)
     frame[:, LEFT_MARGIN : LEFT_MARGIN + DIGIT_SIZE] = quantized
     return frame
