@@ -21,6 +21,7 @@ class DiffusionSampler:
         self.session = ort.InferenceSession(
             str(model_path), options, providers=["CPUExecutionProvider"]
         )
+        self.conditional = any(value.name == "label" for value in self.session.get_inputs())
         self.diffusion_steps = diffusion_steps
         betas = np.linspace(1e-4, 0.02, diffusion_steps, dtype=np.float32)
         self.alpha_bars = np.cumprod(1.0 - betas, dtype=np.float32)
@@ -32,6 +33,7 @@ class DiffusionSampler:
         sampler: str = "ddpm",
         callback: FrameCallback | None = None,
         frame_every: int = 1,
+        label: int | None = None,
     ) -> np.ndarray:
         if not 2 <= sampling_steps <= self.diffusion_steps:
             raise ValueError(f"sampling_steps must be in 2..{self.diffusion_steps}")
@@ -43,6 +45,8 @@ class DiffusionSampler:
             raise ValueError(
                 f"DDPM requires exactly {self.diffusion_steps} steps; use DDIM for fewer steps"
             )
+        if self.conditional and (label is None or not 0 <= label <= 9):
+            raise ValueError("conditional model requires label in 0..9")
 
         rng = np.random.default_rng(seed)
         state = rng.standard_normal((1, 1, 28, 28), dtype=np.float32)
@@ -63,9 +67,10 @@ class DiffusionSampler:
 
         for position, timestep in enumerate(schedule):
             time_input = np.asarray([timestep], dtype=np.int64)
-            predicted_noise = self.session.run(
-                None, {"image": state, "timestep": time_input}
-            )[0]
+            inputs = {"image": state, "timestep": time_input}
+            if self.conditional:
+                inputs["label"] = np.asarray([label], dtype=np.int64)
+            predicted_noise = self.session.run(None, inputs)[0]
             alpha_bar = self.alpha_bars[timestep]
             predicted_clean = (
                 state - np.sqrt(1.0 - alpha_bar) * predicted_noise

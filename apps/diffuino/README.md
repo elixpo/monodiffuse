@@ -54,6 +54,19 @@ Seed 11 is the reproducible default because it forms a legible seven with the
 selected seed-2 binary checkpoint. Pass any integer seed to explore other
 uncontrolled outputs.
 
+Screen candidate seeds on a workstation before running them on the board:
+
+```bash
+python -m apps.diffuino.screen_seeds --start 0 --count 50
+# Recheck a shortlist at higher visual density:
+python -m apps.diffuino.screen_seeds --seeds 11,12,30 --columns 3
+```
+
+This writes labeled 28×28 and exact quantized 8×8 matrix contact sheets plus a
+CSV under `apps/diffuino/output/`.
+The automatic `KEEP` filter combines classifier confidence with foreground-ink
+and contrast checks; the contact sheet remains the final visual check.
+
 The paper-faithful default is the 1,000-step ancestral DDPM sampler. A reduced-step
 DDIM mode is available for profiling, but the present binary checkpoint does not
 produce reliable digits with the 50-step DDIM path and it is not used for the demo.

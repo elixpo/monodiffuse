@@ -27,6 +27,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--base-channels", type=int, default=16)
     result.add_argument("--precision", choices=("fp32", "binary"), default="binary")
     result.add_argument("--learning-rate", type=float, default=2e-4)
+    result.add_argument(
+        "--init",
+        type=Path,
+        help="parameter-compatible checkpoint used to warm-start training",
+    )
     result.add_argument("--seed", type=int, default=0)
     result.add_argument("--workers", type=int, default=2)
     result.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -48,6 +53,21 @@ def train(args: argparse.Namespace) -> Path:
         num_classes=10,
     )
     model = BinaryDiffusionUNet(config).to(device)
+    initialization = None
+    if args.init is not None:
+        payload = torch.load(args.init, map_location="cpu", weights_only=False)
+        source_config = ModelConfig(**payload["model_config"])
+        if source_config.num_classes != config.num_classes:
+            raise ValueError(
+                f"initial checkpoint has {source_config.num_classes} classes; "
+                f"expected {config.num_classes}"
+            )
+        model.load_state_dict(payload["model"])
+        initialization = {
+            "checkpoint": str(args.init),
+            "checkpoint_sha256": sha256(args.init),
+            "source_binary_weights": source_config.binary_weights,
+        }
     diffusion = Diffusion(1000).to(device)
     train_loader = loader("mnist", args.data, True, args.batch_size, args.workers, args.seed)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=1e-4)
@@ -104,6 +124,7 @@ def train(args: argparse.Namespace) -> Path:
         "dataset": "mnist",
         "variant": f"conditional_{'native_uncentered_pre' if args.precision == 'binary' else 'fp32'}",
         "seed": args.seed,
+        "initialization": initialization,
         "training": {
             "epochs": args.epochs,
             "batch_size": args.batch_size,
