@@ -55,14 +55,15 @@ is not a ground-truth label or a generative-quality metric.
 The physical framebuffer is horizontal: 8 rows by 13 columns. Diffuino keeps
 the digit square by centering an 8×8 image within those 13 columns.
 
-The 8×8 digit conversion applies per-frame contrast stretching so thin MNIST
-strokes reach the matrix's full grayscale range after downsampling.
+The 8×8 digit conversion applies per-frame contrast stretching. Digits `0`,
+`2`, `3`, `6`, `8`, and `9` use crisp nearest-neighbor downsampling so their
+holes and stroke gaps survive; `1`, `4`, `5`, and `7` retain smoother bilinear
+downsampling.
 
 The visually audited default seeds are `0:15`, `1:16`, `2:10`, `3:22`, `4:0`,
 `5:0`, `6:12`, `7:4`, `8:10`, and `9:18`.
-Digit `3` alone uses nearest-neighbor downsampling so its lower stroke and two
-openings survive at 8×8. It retains grayscale; the generated sample and all
-other digit renderings are unchanged.
+All digits retain eight grayscale levels; no destructive binary threshold is
+applied.
 
 During matrix inference, the four onboard RGB LEDs expose live system state:
 LED 1 shows CPU load, LED 2 shows RAM load, LED 3 fades from blue to magenta as

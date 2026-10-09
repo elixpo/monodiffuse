@@ -32,7 +32,7 @@ def test_auto_contrast_uses_full_brightness_for_a_faint_stroke():
     assert np.count_nonzero(frame) > 0
 
 
-def test_digit_three_keeps_grayscale_without_hard_thresholding():
+def test_crisp_rendering_keeps_grayscale_without_hard_thresholding():
     state = np.linspace(-1, 1, 28 * 28, dtype=np.float32).reshape(1, 1, 28, 28)
-    three = state_to_matrix(state, digit=3)
-    assert np.any((three > 0) & (three < 7))
+    frame = state_to_matrix(state, digit=8)
+    assert np.any((frame > 0) & (frame < 7))

@@ -10,6 +10,7 @@ ROWS = 8
 COLS = 13
 DIGIT_SIZE = 8
 LEFT_MARGIN = (COLS - DIGIT_SIZE) // 2
+CRISP_DIGITS = frozenset({0, 2, 3, 6, 8, 9})
 
 
 def state_to_matrix(
@@ -28,7 +29,11 @@ def state_to_matrix(
     resized = np.asarray(
         Image.fromarray(pixels, mode="L").resize(
             (DIGIT_SIZE, DIGIT_SIZE),
-            Image.Resampling.NEAREST if digit == 3 else Image.Resampling.BILINEAR,
+            (
+                Image.Resampling.NEAREST
+                if digit in CRISP_DIGITS
+                else Image.Resampling.BILINEAR
+            ),
         ),
         dtype=np.float32,
     )
