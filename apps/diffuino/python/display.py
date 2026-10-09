@@ -16,7 +16,14 @@ class MatrixDisplay:
         return self
 
     def draw(self, payload: bytes) -> None:
-        self.bridge.call("draw", payload, timeout=self.timeout)
+        try:
+            self.bridge.call("draw", payload, timeout=self.timeout)
+        except Exception as error:
+            if "method draw not available" in str(error):
+                raise RuntimeError(
+                    "STM32 matrix firmware is not installed; flash apps/diffuino/sketch first"
+                ) from error
+            raise
 
     def clear(self) -> None:
         self.draw(bytes(104))

@@ -16,6 +16,16 @@ python -m pip install -r apps/diffuino/requirements.txt
 Open `apps/diffuino` in Arduino App Lab and run it once to compile and flash
 `sketch/sketch.ino`. Then generate a requested digit from the repository root:
 
+App Lab discovers user applications under `~/ArduinoApps`. From the UNO Q shell,
+install or update this repository checkout with:
+
+```bash
+mkdir -p ~/ArduinoApps/diffuino
+rsync -a ~/monodiffuse/apps/diffuino/ ~/ArduinoApps/diffuino/
+arduino-app-cli app list
+arduino-app-cli app start user:diffuino
+```
+
 ```bash
 python -m apps.diffuino.python.main --seed 11
 ```
