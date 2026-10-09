@@ -70,7 +70,10 @@ def run(args: argparse.Namespace) -> None:
             if display is not None:
                 display.draw(board_bytes(frame))
             emitted += 1
-            print(f"frame={emitted:03d} step={position:03d}/{args.steps} t={timestep:03d}")
+            print(
+                f"frame={emitted:03d} step={position:03d}/{args.steps} t={timestep:03d}",
+                flush=True,
+            )
             if args.frame_delay:
                 time.sleep(args.frame_delay)
 
@@ -92,7 +95,8 @@ def run(args: argparse.Namespace) -> None:
     save_image(final, args.output)
     print(
         f"done seed={args.seed} sampler={args.sampler} steps={args.steps} "
-        f"frames={emitted} seconds={elapsed:.3f} output={args.output}"
+        f"frames={emitted} seconds={elapsed:.3f} output={args.output}",
+        flush=True,
     )
 
 

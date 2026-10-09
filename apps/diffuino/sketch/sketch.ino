@@ -28,6 +28,20 @@ void draw(std::vector<uint8_t> next_frame) {
 void setup() {
   matrix.begin();
   matrix.setGrayscaleBits(3);
+
+  // A short border confirms that the STM32 sketch booted independently of
+  // Linux inference and Bridge RPC readiness.
+  uint8_t boot_frame[FRAME_SIZE] = {0};
+  for (size_t column = 0; column < FRAME_COLS; ++column) {
+    boot_frame[column] = 2;
+    boot_frame[(FRAME_ROWS - 1) * FRAME_COLS + column] = 2;
+  }
+  for (size_t row = 0; row < FRAME_ROWS; ++row) {
+    boot_frame[row * FRAME_COLS] = 2;
+    boot_frame[row * FRAME_COLS + FRAME_COLS - 1] = 2;
+  }
+  matrix.draw(boot_frame);
+  delay(500);
   matrix.clear();
   Bridge.begin();
   Bridge.provide("draw", draw);

@@ -26,6 +26,15 @@ arduino-app-cli app list
 arduino-app-cli app start user:diffuino
 ```
 
+The matrix briefly displays a border when the STM32 sketch boots. Diffusion
+frames begin after the Linux container and Bridge RPC are ready. To inspect a
+run that exits before displaying frames:
+
+```bash
+arduino-app-cli app ps
+arduino-app-cli app logs user:diffuino --tail 200 --all
+```
+
 ```bash
 python -m apps.diffuino.python.main --seed 11
 ```
