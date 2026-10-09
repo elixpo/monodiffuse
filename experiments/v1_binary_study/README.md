@@ -41,3 +41,16 @@ Evaluation reports feature-space FID and KID, density, coverage, and class-prior
 Jensen--Shannon divergence. It also records real-vs-real and clamped Gaussian-noise
 controls. Classifier confidence is retained only as a diagnosed auxiliary value, not
 as a quality metric.
+
+Binary checkpoints retain latent FP32 weights for training. To produce a genuine
+inference-storage artifact with one packed sign bit per quantized weight and one FP32
+scale per output channel, run:
+
+```bash
+python -m experiments.v1_binary_study.export \
+  artifacts/v1_binary_study/mnist/native_centered_pre/seed_0/checkpoint.pt
+```
+
+The adjacent JSON manifest records both payload and container sizes and identifies
+every packed and floating-point tensor. This is a storage export, not a claim that
+standard PyTorch convolutions execute packed XNOR kernels.
