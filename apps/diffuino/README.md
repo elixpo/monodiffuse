@@ -55,9 +55,9 @@ is not a ground-truth label or a generative-quality metric.
 The physical framebuffer is horizontal: 8 rows by 13 columns. Diffuino keeps
 the digit square by centering an 8×8 image within those 13 columns.
 
-The 8×8 digit conversion applies per-frame contrast stretching. Digits `0`,
-`2`, `3`, `6`, `8`, and `9` use crisp nearest-neighbor downsampling so their
-holes and stroke gaps survive; `1`, `4`, `5`, and `7` retain smoother bilinear
+The 8×8 digit conversion applies per-frame contrast stretching. Digits `2`,
+`3`, and `8` use crisp nearest-neighbor downsampling so their holes and stroke
+gaps survive; `0`, `1`, `4`, `5`, `6`, `7`, and `9` retain smoother bilinear
 downsampling.
 
 The visually audited default seeds are `0:15`, `1:16`, `2:50`, `3:22`, `4:0`,

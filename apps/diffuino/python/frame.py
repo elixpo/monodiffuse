@@ -10,7 +10,7 @@ ROWS = 8
 COLS = 13
 DIGIT_SIZE = 8
 LEFT_MARGIN = (COLS - DIGIT_SIZE) // 2
-CRISP_DIGITS = frozenset({0, 2, 3, 6, 8, 9})
+CRISP_DIGITS = frozenset({2, 3, 8})
 
 
 def state_to_matrix(
