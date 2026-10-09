@@ -10,9 +10,11 @@ import numpy as np
 from PIL import Image
 
 try:
+    from .classifier import DigitClassifier
     from .frame import board_bytes, state_to_matrix
     from .runtime import DiffusionSampler
 except ImportError:  # App Lab executes python/main.py as a script.
+    from classifier import DigitClassifier
     from frame import board_bytes, state_to_matrix
     from runtime import DiffusionSampler
 
@@ -35,6 +37,11 @@ def parser() -> argparse.ArgumentParser:
         type=Path,
         default=ROOT / "models" / "mnist_unconditional_w1a32.onnx",
     )
+    result.add_argument(
+        "--classifier",
+        type=Path,
+        default=ROOT / "models" / "mnist_classifier.onnx",
+    )
     result.add_argument("--output", type=Path, default=ROOT / "output" / "latest.png")
     return result
 
@@ -48,7 +55,10 @@ def save_image(state: np.ndarray, path: Path) -> None:
 def run(args: argparse.Namespace) -> None:
     if not args.model.exists():
         raise SystemExit(f"model not found: {args.model}; pull or export it first")
+    if not args.classifier.exists():
+        raise SystemExit(f"classifier not found: {args.classifier}; pull or export it first")
     sampler = DiffusionSampler(args.model, threads=args.threads)
+    classifier = DigitClassifier(args.classifier, threads=args.threads)
     display_context = None
     if not args.no_matrix:
         try:
@@ -93,9 +103,14 @@ def run(args: argparse.Namespace) -> None:
 
     elapsed = time.perf_counter() - started
     save_image(final, args.output)
+    digit, confidence = classifier.predict(final)
     print(
         f"done seed={args.seed} sampler={args.sampler} steps={args.steps} "
         f"frames={emitted} seconds={elapsed:.3f} output={args.output}",
+        flush=True,
+    )
+    print(
+        f"generated_digit={digit} classifier_confidence={confidence:.1%}",
         flush=True,
     )
 

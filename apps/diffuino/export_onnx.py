@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 
 from experiments.v1_binary_study.models import BinaryDiffusionUNet, ModelConfig, QuantConv2d
+from experiments.v1_binary_study.evaluate import DigitEncoder
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +59,26 @@ def export(checkpoint: Path, output: Path) -> Path:
     return output
 
 
+def export_classifier(checkpoint: Path, output: Path) -> Path:
+    """Export the held-out MNIST evaluation encoder for demo-only digit naming."""
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    model = DigitEncoder(channels=1, classes=10)
+    model.load_state_dict(payload["model"])
+    model.eval()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    torch.onnx.export(
+        model,
+        torch.zeros(1, 1, 28, 28, dtype=torch.float32),
+        output,
+        input_names=["image"],
+        output_names=["logits"],
+        opset_version=17,
+        do_constant_folding=True,
+    )
+    print(f"saved {output} ({output.stat().st_size} bytes)")
+    return output
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -76,5 +97,20 @@ if __name__ == "__main__":
         type=Path,
         default=ROOT / "apps" / "diffuino" / "models" / "mnist_unconditional_w1a32.onnx",
     )
+    parser.add_argument(
+        "--classifier-checkpoint",
+        type=Path,
+        default=ROOT
+        / "artifacts"
+        / "v1_binary_study"
+        / "mnist"
+        / "evaluation_encoder.pt",
+    )
+    parser.add_argument(
+        "--classifier-output",
+        type=Path,
+        default=ROOT / "apps" / "diffuino" / "models" / "mnist_classifier.onnx",
+    )
     arguments = parser.parse_args()
     export(arguments.checkpoint, arguments.output)
+    export_classifier(arguments.classifier_checkpoint, arguments.classifier_output)

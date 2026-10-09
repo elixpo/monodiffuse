@@ -42,7 +42,13 @@ python -m apps.diffuino.python.main --seed 11
 Each seed starts from different Gaussian noise and may resolve into any digit
 from 0 through 9. Use `--no-matrix` to benchmark inference without Bridge. The
 final 28×28 image is saved under
-`apps/diffuino/output/latest.png`.
+`apps/diffuino/output/latest.png`. Each run creates exactly one sample and then
+prints a held-out MNIST classifier prediction so the terminal result can be
+matched against the matrix. This prediction names the uncontrolled sample; it
+is not a ground-truth label or a generative-quality metric.
+
+The physical framebuffer is horizontal: 8 rows by 13 columns. Diffuino keeps
+the digit square by centering an 8×8 image within those 13 columns.
 
 Seed 11 is the reproducible default because it forms a legible seven with the
 selected seed-2 binary checkpoint. Pass any integer seed to explore other
