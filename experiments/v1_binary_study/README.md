@@ -29,3 +29,15 @@ python -m experiments.v1_binary_study.train suite \
 Artifacts are stored under `artifacts/v1_binary_study/<dataset>/<variant>/seed_N`.
 Each checkpoint is accompanied by its complete configuration, environment provenance,
 training history, SHA-256 digest, model-size accounting, and quantization diagnostics.
+
+Train the held-out domain encoder and evaluate all checkpoints:
+
+```bash
+python -m experiments.v1_binary_study.evaluate suite \
+  --dataset mnist --encoder-epochs 10 --eval-samples 2000 --sampling-steps 50
+```
+
+Evaluation reports feature-space FID and KID, density, coverage, and class-prior
+Jensen--Shannon divergence. It also records real-vs-real and clamped Gaussian-noise
+controls. Classifier confidence is retained only as a diagnosed auxiliary value, not
+as a quality metric.

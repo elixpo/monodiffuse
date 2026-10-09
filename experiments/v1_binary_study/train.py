@@ -110,7 +110,10 @@ def train_one(args, variant: str, seed: int, initialization: Path | None = None)
         model.train()
         running = 0.0
         progress = tqdm(train_loader, desc=f"{args.dataset}/{variant}/s{seed} e{epoch + 1}/{args.epochs}")
-        for clean, _ in progress:
+        examples_seen = 0
+        for batch_index, (clean, _) in enumerate(progress):
+            if args.max_batches is not None and batch_index >= args.max_batches:
+                break
             clean = clean.to(device, non_blocking=True)
             optimizer.zero_grad(set_to_none=True)
             with autocast("cuda", enabled=scaler.is_enabled()):
@@ -121,8 +124,9 @@ def train_one(args, variant: str, seed: int, initialization: Path | None = None)
             scaler.step(optimizer)
             scaler.update()
             running += loss.item() * clean.shape[0]
+            examples_seen += clean.shape[0]
             progress.set_postfix(loss=f"{loss.item():.4f}")
-        epoch_loss = running / (len(train_loader) * args.batch_size)
+        epoch_loss = running / examples_seen
         history.append({"epoch": epoch + 1, "train_loss": epoch_loss, "lr": optimizer.param_groups[0]["lr"]})
         scheduler.step()
         atomic_json(output / "history.json", {"epochs": history})
@@ -142,6 +146,7 @@ def train_one(args, variant: str, seed: int, initialization: Path | None = None)
             "diffusion_steps": args.diffusion_steps,
             "amp": args.amp,
             "elapsed_seconds": time.time() - started,
+            "max_batches_per_epoch": args.max_batches,
         },
         "initialization": initialization_metadata,
         "model_statistics": model_statistics(model),
@@ -213,6 +218,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--weight-decay", type=float, default=1e-4)
     result.add_argument("--grad-clip", type=float, default=1.0)
     result.add_argument("--workers", type=int, default=2)
+    result.add_argument("--max-batches", type=int, default=None, help="Debug-only cap recorded in metadata")
     result.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     result.add_argument("--data", type=Path, default=root / "data")
     result.add_argument("--artifacts", type=Path, default=root / "artifacts" / "v1_binary_study")
