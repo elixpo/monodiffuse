@@ -407,6 +407,41 @@ replace nor directly compare with that system. They show, in a matched tiny
 network, that zero-shot PTQ is an overly weak baseline for deciding whether binary
 weights can be trained. Scaling teacher-free binary diffusion remains unresolved.
 
+\section{Hardware Artifact: Diffuino}
+
+As a system demonstration separate from the controlled study, we deploy
+Diffuino on an Arduino UNO Q. The Qualcomm Linux processor executes a
+class-conditioned MNIST diffusion model with ONNX Runtime and streams selected
+states from the 1,000-step ancestral reverse process over Bridge RPC. The STM32
+coprocessor refreshes the onboard $8\times13$ LED matrix, where each $28\times28$
+state is rendered as a centered $8\times8$ grayscale digit. Four RGB LEDs report
+CPU load, memory load, denoising progress, and agreement between the requested
+class and a diagnostic classifier.
+
+For a reliable interactive exhibit, the default artifact uses a separately
+trained class-conditioned FP32 checkpoint. Fixed per-class sampling seeds and
+display-only resize/contrast settings improve repeatable legibility on the small
+matrix; neither is used in the paper's distributional evaluation. The study's
+native W1A32 seed-2 checkpoint can also be exported to ONNX by materializing its
+sign-scale convolution weights as ordinary floating-point convolution tensors.
+Consequently, that path preserves the learned binary-weight representation but
+does not execute packed XNOR convolutions. Diffuino therefore demonstrates
+functional edge deployment and live diffusion visualization, not binary
+arithmetic acceleration, latency reduction, or energy savings. The installable
+app, packaging script, model files, and firmware are included with the released
+code.
+
+\IfFileExists{figures/diffuino/diffuino-board.jpg}{
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/diffuino/diffuino-board.jpg}
+\caption{Diffuino running on the Arduino UNO Q. The Qualcomm processor performs
+ONNX inference while the STM32 drives the $8\times13$ LED matrix and auxiliary
+RGB status LEDs. This artifact is separate from the controlled-study metrics.}
+\label{fig:diffuino}
+\end{figure}
+}{}
+
 \section{Limitations}
 
 The network and training budget are intentionally small. Three seeds reveal large
@@ -429,11 +464,14 @@ seeds, package/CUDA/device versions, source commit, checkpoint SHA-256, paramete
 accounting, and quantization diagnostics beside every checkpoint. Atomic JSON
 writes prevent partial metadata. Evaluation artifacts include per-seed metrics,
 aggregate means and sample standard deviations, encoder accuracy/calibration,
-real--real and Gaussian-noise controls, and fixed-seed sample grids. Five unit
-tests cover parameter compatibility, forward shapes, diffusion schedules,
+real--real and Gaussian-noise controls, and fixed-seed sample grids. Unit tests
+cover parameter compatibility, forward shapes, diffusion schedules,
 distribution-metric controls, and physical bit packing. The exact entry points
 are documented under \path{experiments/v1_binary_study}; all paper tables are
-traceable to \path{artifacts/v1_binary_study}.
+traceable to \path{artifacts/v1_binary_study}. Diffuino is distributed as a
+deterministically generated Arduino App archive with an allowlisted runtime
+payload and a SHA-256 manifest; its interactive FP32 checkpoint is explicitly
+separated from the binary checkpoints evaluated in the study.
 
 \section{Conclusion}
 
