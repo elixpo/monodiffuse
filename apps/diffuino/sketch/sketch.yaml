@@ -3,4 +3,5 @@ profiles:
     platforms:
       - platform: arduino:zephyr
     libraries:
+      - dependency: MsgPack (0.4.2)
 default_profile: default
