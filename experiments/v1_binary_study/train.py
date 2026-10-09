@@ -188,7 +188,7 @@ def convert_ptq(args, source: Path, variant: str, seed: int) -> Path:
 
 def run_suite(args) -> None:
     seeds = [int(value) for value in args.seeds.split(",")]
-    native_variants = [
+    all_native_variants = [
         "fp",
         "native_uncentered_post",
         "native_centered_post",
@@ -196,11 +196,23 @@ def run_suite(args) -> None:
         "native_centered_pre",
         "native_w1a1_core",
     ]
+    selected = set(args.suite_variants.split(",")) if args.suite_variants else set(VARIANTS)
+    unknown = selected - set(VARIANTS)
+    if unknown:
+        raise ValueError(f"unknown suite variants: {', '.join(sorted(unknown))}")
+    needs_fp = bool(selected & {"ptq_uncentered", "ptq_centered", "warm_qat_centered"})
+    native_variants = [
+        variant for variant in all_native_variants
+        if variant in selected or (variant == "fp" and needs_fp)
+    ]
     for seed in seeds:
         checkpoints = {variant: train_one(args, variant, seed) for variant in native_variants}
-        convert_ptq(args, checkpoints["fp"], "ptq_uncentered", seed)
-        convert_ptq(args, checkpoints["fp"], "ptq_centered", seed)
-        train_one(args, "warm_qat_centered", seed, initialization=checkpoints["fp"])
+        if "ptq_uncentered" in selected:
+            convert_ptq(args, checkpoints["fp"], "ptq_uncentered", seed)
+        if "ptq_centered" in selected:
+            convert_ptq(args, checkpoints["fp"], "ptq_centered", seed)
+        if "warm_qat_centered" in selected:
+            train_one(args, "warm_qat_centered", seed, initialization=checkpoints["fp"])
 
 
 def parser() -> argparse.ArgumentParser:
@@ -210,6 +222,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--dataset", choices=DATASET_INFO, default="mnist")
     result.add_argument("--variant", choices=VARIANTS, default="native_centered_pre")
     result.add_argument("--seeds", default="0,1,2")
+    result.add_argument(
+        "--suite-variants",
+        default="",
+        help="Comma-separated suite subset; FP is added automatically for PTQ and warm-start variants",
+    )
     result.add_argument("--epochs", type=int, default=20)
     result.add_argument("--batch-size", type=int, default=128)
     result.add_argument("--base-channels", type=int, default=32)
