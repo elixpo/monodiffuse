@@ -64,6 +64,12 @@ Digit `3` alone uses nearest-neighbor downsampling so its lower stroke and two
 openings survive at 8×8. It retains grayscale; the generated sample and all
 other digit renderings are unchanged.
 
+During matrix inference, the four onboard RGB LEDs expose live system state:
+LED 1 shows CPU load, LED 2 shows RAM load, LED 3 fades from blue to magenta as
+diffusion progresses, and LED 4 is blue while running then green/red for a
+classifier match/mismatch. Diffuino restores the Linux-managed LED 1/2 states
+after inference. Pass `--no-status-leds` to disable this behavior.
+
 Screen candidate seeds on a workstation before running them on the board:
 
 ```bash

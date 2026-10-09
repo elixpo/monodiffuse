@@ -46,6 +46,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--brightness-levels", type=int, default=8)
     result.add_argument("--no-matrix", action="store_true")
     result.add_argument(
+        "--no-status-leds",
+        action="store_true",
+        help="disable the four RGB load/progress indicators",
+    )
+    result.add_argument(
         "--model",
         type=Path,
         default=ROOT / "models" / "mnist_conditional_fp32.onnx",
@@ -85,7 +90,7 @@ def run(args: argparse.Namespace) -> None:
     emitted = 0
     started = time.perf_counter()
 
-    def generate(display=None):
+    def generate(display=None, status=None):
         nonlocal emitted
 
         def on_frame(position: int, timestep: int, state: np.ndarray) -> None:
@@ -97,11 +102,12 @@ def run(args: argparse.Namespace) -> None:
             )
             if display is not None:
                 display.draw(board_bytes(frame))
+            loads = status.update(position, args.steps) if status is not None else None
             emitted += 1
-            print(
-                f"frame={emitted:03d} step={position:03d}/{args.steps} t={timestep:03d}",
-                flush=True,
-            )
+            message = f"frame={emitted:03d} step={position:03d}/{args.steps} t={timestep:03d}"
+            if loads is not None:
+                message += f" cpu={loads[0]:.0%} ram={loads[1]:.0%}"
+            print(message, flush=True)
             if args.frame_delay:
                 time.sleep(args.frame_delay)
 
@@ -116,13 +122,21 @@ def run(args: argparse.Namespace) -> None:
 
     if display_context is None:
         final = generate()
+        digit, confidence = classifier.predict(final)
     else:
         with display_context as display:
-            final = generate(display)
+            try:
+                from .status import StatusLeds
+            except ImportError:
+                from status import StatusLeds
+
+            with StatusLeds(display, enabled=not args.no_status_leds) as status:
+                final = generate(display, status)
+                digit, confidence = classifier.predict(final)
+                status.finish(digit == args.digit)
 
     elapsed = time.perf_counter() - started
     save_image(final, args.output)
-    digit, confidence = classifier.predict(final)
     print(
         f"done seed={seed} sampler={args.sampler} steps={args.steps} "
         f"frames={emitted} seconds={elapsed:.3f} output={args.output}",

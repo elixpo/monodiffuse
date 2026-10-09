@@ -18,11 +18,11 @@ class MatrixDisplay:
             raise RuntimeError("Arduino Router did not become available")
         return self
 
-    def draw(self, payload: bytes) -> None:
+    def _call(self, method: str, *parameters) -> None:
         deadline = time.monotonic() + self.ready_timeout
         while True:
             try:
-                self.bridge.call("draw", payload, timeout=self.timeout)
+                self.bridge.call(method, *parameters, timeout=self.timeout)
                 return
             except Exception as error:
                 # The Linux router socket becomes available before a freshly
@@ -33,9 +33,18 @@ class MatrixDisplay:
                     raise
                 if time.monotonic() >= deadline:
                     raise RuntimeError(
-                        "STM32 draw RPC did not become ready; verify the Diffuino sketch is running"
+                        f"STM32 {method} RPC did not become ready; verify the Diffuino sketch is running"
                     ) from error
                 time.sleep(0.25)
+
+    def draw(self, payload: bytes) -> None:
+        self._call("draw", payload)
+
+    def set_led3_color(self, red: int, green: int, blue: int) -> None:
+        self._call("set_led3_color", red, green, blue)
+
+    def set_led4_color(self, red: bool, green: bool, blue: bool) -> None:
+        self._call("set_led4_color", red, green, blue)
 
     def clear(self) -> None:
         self.draw(bytes(104))
