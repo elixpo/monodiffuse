@@ -1,8 +1,11 @@
 # Diffuino
 
-Diffuino runs an unconditional binary-weight MNIST diffusion model on the
-Arduino UNO Q. The Qualcomm Linux processor performs ONNX inference and streams
-8×13 grayscale frames over Bridge RPC; the STM32 refreshes the onboard matrix.
+Diffuino runs a class-conditioned MNIST diffusion model on the Arduino UNO Q.
+The Qualcomm Linux processor performs ONNX inference and streams 8×13 grayscale
+frames over Bridge RPC; the STM32 refreshes the onboard matrix. The reliable
+interactive default is the FP32 teacher. Binary-weight checkpoints remain part
+of the research workflow, but are deployed only after passing the same 10-class
+matrix validation.
 
 ## UNO Q
 
@@ -39,8 +42,10 @@ arduino-app-cli app logs user:diffuino --tail 200 --all
 python -m apps.diffuino.python.main --seed 11
 ```
 
-Each seed starts from different Gaussian noise and may resolve into any digit
-from 0 through 9. Use `--no-matrix` to benchmark inference without Bridge. The
+The default conditional FP32 deployment accepts `--digit 0` through `--digit 9`
+and automatically selects a visually audited initial-noise seed for that class.
+Pass `--seed` explicitly to explore other outputs. Use `--no-matrix` to benchmark
+inference without Bridge. The
 final 28×28 image is saved under
 `apps/diffuino/output/latest.png`. Each run creates exactly one sample and then
 prints a held-out MNIST classifier prediction so the terminal result can be
@@ -50,9 +55,8 @@ is not a ground-truth label or a generative-quality metric.
 The physical framebuffer is horizontal: 8 rows by 13 columns. Diffuino keeps
 the digit square by centering an 8×8 image within those 13 columns.
 
-Seed 11 is the reproducible default because it forms a legible seven with the
-selected seed-2 binary checkpoint. Pass any integer seed to explore other
-uncontrolled outputs.
+The 8×8 digit conversion applies per-frame contrast stretching so thin MNIST
+strokes reach the matrix's full grayscale range after downsampling.
 
 Screen candidate seeds on a workstation before running them on the board:
 

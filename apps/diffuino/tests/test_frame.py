@@ -22,3 +22,11 @@ def test_frame_rejects_wrong_shape():
         assert "28x28" in str(error)
     else:
         raise AssertionError("wrong input shape was accepted")
+
+
+def test_auto_contrast_uses_full_brightness_for_a_faint_stroke():
+    state = np.full((1, 1, 28, 28), -1.0, dtype=np.float32)
+    state[:, :, 4:24, 12:16] = -0.25
+    frame = state_to_matrix(state)
+    assert frame.max() == 7
+    assert np.count_nonzero(frame) > 0

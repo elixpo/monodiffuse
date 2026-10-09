@@ -12,7 +12,11 @@ DIGIT_SIZE = 8
 LEFT_MARGIN = (COLS - DIGIT_SIZE) // 2
 
 
-def state_to_matrix(state: np.ndarray, levels: int = 8) -> np.ndarray:
+def state_to_matrix(
+    state: np.ndarray,
+    levels: int = 8,
+    auto_contrast: bool = True,
+) -> np.ndarray:
     """Return an 8x13 uint8 frame while preserving MNIST's square aspect ratio."""
     if levels < 2 or levels > 256:
         raise ValueError("levels must be between 2 and 256")
@@ -26,6 +30,10 @@ def state_to_matrix(state: np.ndarray, levels: int = 8) -> np.ndarray:
         ),
         dtype=np.float32,
     )
+    if auto_contrast:
+        low, high = np.percentile(resized, (10, 99))
+        if high - low >= 1.0:
+            resized = np.clip((resized - low) * (255.0 / (high - low)), 0, 255)
     quantized = np.rint(resized * (levels - 1) / 255.0).astype(np.uint8)
     frame = np.zeros((ROWS, COLS), dtype=np.uint8)
     frame[:, LEFT_MARGIN : LEFT_MARGIN + DIGIT_SIZE] = quantized
