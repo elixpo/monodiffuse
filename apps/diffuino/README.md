@@ -58,6 +58,9 @@ the digit square by centering an 8×8 image within those 13 columns.
 The 8×8 digit conversion applies per-frame contrast stretching so thin MNIST
 strokes reach the matrix's full grayscale range after downsampling.
 
+The visually audited default seeds are `0:15`, `1:16`, `2:10`, `3:0`, `4:0`,
+`5:0`, `6:12`, `7:4`, `8:10`, and `9:18`.
+
 Screen candidate seeds on a workstation before running them on the board:
 
 ```bash
