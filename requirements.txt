@@ -17,6 +17,7 @@ numpy
 scipy            # FID / Frechet distance (sqrtm), nearest-neighbour metrics
 matplotlib       # sample grids and plots
 tqdm             # progress bars
+pytest            # reproducibility/unit checks for the controlled study
 
 # --- Optional, for later phases (not required to run P1) ---
 # difflogic       # official CUDA logic-gate kernels — faster than the bundled

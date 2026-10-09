@@ -1,0 +1,31 @@
+# Reproducible binary-diffusion study
+
+This package replaces the duplicated Phase-0 scripts with one controlled pipeline.
+Every condition uses an identical parameterization; only the configured forward
+quantization and residual-block ordering change.
+
+Terminology is deliberately precise:
+
+- `fp`: FP32 parameters and evaluation; optional AMP during training.
+- `native_*`: random initialization with binary convolution weights in every forward pass.
+- `ptq_*`: zero-shot post-training sign projection of the matching FP checkpoint.
+- `warm_qat_centered`: centered binary forwards initialized from the FP checkpoint, then trained.
+- `native_w1a1_core`: binary convolution weights and block activations. Boundary layers,
+  normalization, time conditioning, scales, and residual accumulation remain floating point.
+
+Run the unit tests:
+
+```bash
+python -m pytest -q experiments/v1_binary_study/tests
+```
+
+Run the full MNIST training suite with three independent seeds:
+
+```bash
+python -m experiments.v1_binary_study.train suite \
+  --dataset mnist --seeds 0,1,2 --epochs 20
+```
+
+Artifacts are stored under `artifacts/v1_binary_study/<dataset>/<variant>/seed_N`.
+Each checkpoint is accompanied by its complete configuration, environment provenance,
+training history, SHA-256 digest, model-size accounting, and quantization diagnostics.
