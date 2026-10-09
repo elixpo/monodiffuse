@@ -19,6 +19,35 @@ and ancestral 1,000-step sampler. Native and FP32 models receive one stage; PTQ
 adds no optimization after FP32; warm QAT receives an additional 12-epoch binary
 stage after FP32 pretraining. Results are repeated over training seeds 0, 1, and 2.
 
+## Scientific contribution
+
+The central finding is that one-bit diffusion failure is not caused solely by the
+binary representation: a substantial part is caused by projecting a solution
+optimized in floating point into binary weights after training. By holding the
+network parameterization fixed and changing the training path, the study
+separates representational limitations from post-training projection failure.
+
+The controlled experiments show that:
+
+- native W1A32 optimization substantially mitigates zero-shot PTQ collapse on
+  MNIST, although it remains clearly behind matched FP32 training;
+- mean-centering does not reduce trained latent-to-binary angular distortion and
+  worsens the strongest pre-activation condition, rejecting the proposed
+  centering explanation;
+- the benefit of pre-activation residual ordering is conditional rather than a
+  universal stability principle;
+- peak classifier confidence is invalid as a generative-quality metric in this
+  setting because Gaussian noise receives near-perfect confidence; and
+- the small-model CIFAR-10 experiment cannot establish natural-image binary
+  performance because even its FP32 control fails by a large margin.
+
+The scientific claim is deliberately bounded: **optimization path explains a
+substantial portion of one-bit PTQ failure in this controlled MNIST setting, but
+the study does not establish FP32 parity or a general teacher-free solution to
+binary diffusion.** Physical bit packing, three-seed artifacts, controls, hashes,
+and exact commands support this claim as reproducibility contributions rather
+than being presented as a new binary-training algorithm.
+
 ## Current finding
 
 On MNIST, the best native W1A32 condition substantially outperforms zero-shot PTQ,
