@@ -33,8 +33,12 @@ The experiments also reject two claims from an earlier draft:
 
 The full metric suite therefore reports domain-feature Fréchet and kernel
 distances, density, coverage, and class-prior Jensen--Shannon divergence, with
-real--real and Gaussian-noise controls. CIFAR-10 is included as a natural-image
-stress test rather than presented as a competitive benchmark.
+real--real and Gaussian-noise controls. On CIFAR-10, W1A1-core has the best mean
+domain-feature Fréchet distance among the tested models (`365.02 ± 26.97`), but
+the FP32 baseline is also poor (`382.67 ± 46.91`) relative to the real--real
+control (`7.13`). Its apparent ranking is therefore not evidence of binary
+natural-image success. CIFAR-10 is reported as an inconclusive, failed-model
+stress test rather than a competitive benchmark.
 
 ## Reproduce the study
 
@@ -66,6 +70,9 @@ venv/bin/python -m experiments.v1_binary_study.evaluate suite \
   --dataset mnist --encoder-epochs 10 --eval-samples 2000 \
   --eval-batch-size 256 --sampler ddpm
 ```
+
+Completed evaluations can be resumed safely with `--resume`. The committed
+aggregate tables are in `artifacts/v1_binary_study/{mnist,cifar10}/summary.json`.
 
 Export physically packed binary inference weights:
 

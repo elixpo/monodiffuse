@@ -1,6 +1,7 @@
 \documentclass[conference]{IEEEtran}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
+\usepackage{flushend}
 \usepackage{cite}
 \usepackage{graphicx}
 \usepackage{microtype}
@@ -42,10 +43,13 @@ class-prior divergence, together with real--real and Gaussian-noise controls.
 On MNIST, the best native W1A32 condition obtains domain-feature Fr\'echet distance
 $46.33\mathbin{\pm}17.24$, far below zero-shot PTQ
 ($1314.20\mathbin{\pm}314.96$), but well above FP32
-($3.15\mathbin{\pm}0.38$). The previously proposed centering explanation is not
+($3.15\mathbin{\pm}0.38$). On CIFAR-10, all conditions fail the control audit:
+even FP32 obtains $382.67\mathbin{\pm}46.91$ versus a real--real baseline of
+$7.13$. The previously proposed centering explanation is not
 supported: centering increases latent-to-binary angular error and worsens the
 pre-activation model. Thus, native optimization substantially mitigates PTQ
-collapse in this setting, but does not establish parity with floating point.
+collapse on MNIST, but neither establishes parity with floating point nor
+generalization to natural images.
 We release code, per-seed checkpoints, hashes, histories, controls, and physically
 bit-packed inference weights. Our conclusion is deliberately bounded: training
 path matters at one bit, while a general teacher-free solution to binary diffusion
@@ -228,6 +232,12 @@ density/coverage. Yet the same noise receives mean peak classifier confidence
 1.000, demonstrating why confidence is retained only as a diagnostic and not as a
 quality score.
 
+The independently trained CIFAR-10 encoder reaches 91.51\% test accuracy and
+4.48\% expected calibration error. Its real--real control gives \dfid{} 7.13,
+\dkid{} 0.002, density 1.013, and coverage 0.969; clamped Gaussian noise gives
+\dfid{} 607.86, \dkid{} 4.668, density 0.008, and coverage 0.001. These controls
+make the poor absolute performance of the compact CIFAR-10 generators visible.
+
 \section{MNIST Results}
 
 \begin{table*}[t]
@@ -241,15 +251,15 @@ evaluation. Best non-FP result in bold.}
 \toprule
 Condition & \dfid{} $\downarrow$ & \dkid{} $\downarrow$ & Density $\uparrow$ & Coverage $\uparrow$ & Class JS $\downarrow$ \\
 \midrule
-FP32 & $3.15\pm0.38$ & $0.056\pm0.019$ & $0.284\pm0.020$ & $0.195\pm0.015$ & $0.033\pm0.007$ \\
-Native, uncentered, pre & $\mathbf{46.33\pm17.24}$ & $\mathbf{1.286\pm0.678}$ & $0.022\pm0.011$ & $\mathbf{0.033\pm0.011}$ & $0.295\pm0.030$ \\
-Native, centered, pre & $99.50\pm25.77$ & $7.598\pm4.151$ & $0.010\pm0.011$ & $0.017\pm0.015$ & $0.308\pm0.021$ \\
-Native, uncentered, post & $84.26\pm61.39$ & $6.881\pm7.326$ & $0.033\pm0.030$ & $0.028\pm0.016$ & $0.286\pm0.053$ \\
-Native, centered, post & $82.46\pm61.39$ & $7.943\pm9.954$ & $\mathbf{0.037\pm0.037}$ & $0.032\pm0.026$ & $\mathbf{0.253\pm0.070}$ \\
-Warm QAT, centered, pre & $66.45\pm28.49$ & $4.950\pm3.648$ & $0.019\pm0.012$ & $0.032\pm0.012$ & $0.320\pm0.022$ \\
-Native W1A1 core & $204.55\pm69.77$ & $41.03\pm25.58$ & $0.005\pm0.004$ & $0.009\pm0.006$ & $0.339\pm0.051$ \\
-PTQ, centered, pre & $871.12\pm717.34$ & $1581.31\pm1882.14$ & $0$ & $0$ & $0.533\pm0.001$ \\
-PTQ, uncentered, pre & $1314.20\pm314.96$ & $2467.50\pm895.09$ & $0$ & $0$ & $0.531\pm0.003$ \\
+FP32 & $3.15\pm0.38$ & $0.056\pm0.013$ & $0.284\pm0.014$ & $0.195\pm0.017$ & $0.033\pm0.009$ \\
+Native, uncentered, pre & $\mathbf{46.33\pm17.24}$ & $\mathbf{1.286\pm0.816}$ & $0.022\pm0.005$ & $\mathbf{0.033\pm0.010}$ & $0.295\pm0.020$ \\
+Native, centered, pre & $99.50\pm25.77$ & $7.598\pm3.223$ & $0.010\pm0.008$ & $0.017\pm0.014$ & $0.308\pm0.047$ \\
+Native, uncentered, post & $84.26\pm61.39$ & $6.881\pm6.897$ & $0.033\pm0.051$ & $0.028\pm0.034$ & $0.286\pm0.113$ \\
+Native, centered, post & $82.46\pm61.39$ & $7.943\pm8.043$ & $\mathbf{0.037\pm0.043}$ & $0.032\pm0.025$ & $\mathbf{0.253\pm0.087}$ \\
+Warm QAT, centered, pre & $66.45\pm28.49$ & $4.945\pm3.686$ & $0.019\pm0.004$ & $0.032\pm0.004$ & $0.320\pm0.059$ \\
+Native W1A1 core & $204.55\pm69.77$ & $41.03\pm25.01$ & $0.005\pm0.002$ & $0.009\pm0.004$ & $0.339\pm0.027$ \\
+PTQ, centered, pre & $871.12\pm717.34$ & $1581.31\pm2433.16$ & $0$ & $0$ & $0.533\pm0.000$ \\
+PTQ, uncentered, pre & $1314.20\pm314.96$ & $2467.50\pm1549.51$ & $0$ & $0$ & $0.531\pm0.002$ \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -320,28 +330,47 @@ The same base-width-16 model and 12-epoch budget are applied to CIFAR-10 without
 architecture tuning. We evaluate FP32, centered and uncentered native W1A32,
 centered PTQ, centered warm QAT, and the W1A1 core over three seeds. This is a
 natural-image stress test of the MNIST observation, not a competitive CIFAR-10
-generator. The completed encoder controls and distributional results are inserted
-from the machine-readable study artifact before release.
+generator.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{CIFAR-10 stress test (three seeds). Values are populated from the
-committed evaluation summary.}
+\caption{CIFAR-10 stress test, mean $\pm$ sample standard deviation over three
+training seeds. The real--real control has \dfid{} 7.13, \dkid{} 0.002, density
+1.013, and coverage 0.969. Bold marks the best model mean, not a claim of success.}
 \label{tab:cifar}
 \small
-\begin{tabular}{lrrr}
+\begin{tabular}{lrrrrr}
 \toprule
-Condition & \dfid{} $\downarrow$ & \dkid{} $\downarrow$ & Coverage $\uparrow$ \\
+Condition & \dfid{} $\downarrow$ & \dkid{} $\downarrow$ & Density $\uparrow$ & Coverage $\uparrow$ & Class JS $\downarrow$ \\
 \midrule
-FP32 & -- & -- & -- \\
-Native, uncentered, pre & -- & -- & -- \\
-Native, centered, pre & -- & -- & -- \\
-Warm QAT, centered, pre & -- & -- & -- \\
-Native W1A1 core & -- & -- & -- \\
-PTQ, centered, pre & -- & -- & -- \\
+FP32 & $382.67\pm46.91$ & $3.094\pm0.353$ & $0.230\pm0.132$ & $0.082\pm0.046$ & $0.146\pm0.031$ \\
+Native, uncentered, pre & $402.46\pm21.56$ & $3.454\pm0.347$ & $0.125\pm0.023$ & $0.048\pm0.005$ & $\mathbf{0.143\pm0.010}$ \\
+Native, centered, pre & $384.32\pm11.95$ & $3.244\pm0.136$ & $0.183\pm0.086$ & $0.061\pm0.011$ & $0.168\pm0.003$ \\
+Warm QAT, centered, pre & $403.61\pm22.46$ & $3.301\pm0.194$ & $0.155\pm0.065$ & $0.056\pm0.022$ & $0.180\pm0.017$ \\
+Native W1A1 core & $\mathbf{365.02\pm26.97}$ & $\mathbf{3.078\pm0.237}$ & $\mathbf{0.293\pm0.105}$ & $\mathbf{0.082\pm0.014}$ & $0.152\pm0.019$ \\
+PTQ, centered, pre & $564.21\pm36.08$ & $4.377\pm0.282$ & $0.059\pm0.023$ & $0.003\pm0.001$ & $0.262\pm0.058$ \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
+
+Native optimization again avoids the worst zero-shot PTQ collapse. However, the
+FP32 model itself is hundreds of \dfid{} points from the real--real control and
+has only 0.082 coverage. Although the W1A1 core has the best mean \dfid{}, \dkid{},
+density, and coverage among these weak generators, its three-seed intervals
+overlap FP32 and its samples remain coarse (Fig.~\ref{fig:cifar}). The experiment
+therefore cannot adjudicate binary-versus-FP quality on natural images; it shows
+that this small architecture and budget are inadequate for that claim.
+
+\begin{figure}[t]
+\centering
+\subfloat[FP32]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/fp/seed_0/samples.png}}\hfill
+\subfloat[Native W1A32]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/native_uncentered_pre/seed_0/samples.png}}\hfill
+\subfloat[W1A1 core]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/native_w1a1_core/seed_0/samples.png}}\hfill
+\subfloat[PTQ W1A32]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/ptq_centered/seed_0/samples.png}}
+\caption{CIFAR-10 samples from seed 0. Even FP32 produces coarse color blocks;
+the stress test is consequently not evidence of natural-image fidelity.}
+\label{fig:cifar}
+\end{figure}
 
 \section{Discussion}
 
@@ -350,7 +379,8 @@ On MNIST, optimizing with the binary forward model is decisively better than
 zero-shot sign projection. This is consistent with the binary and floating-point
 objectives favoring different parameter regions. It does not establish that
 random initialization is uniquely necessary: warm-started QAT also recovers much
-of the PTQ loss.
+of the PTQ loss. CIFAR-10 preserves the qualitative PTQ failure, but its failed
+FP32 control prevents a stronger precision comparison.
 
 \paragraph{What it falsifies.}
 The experiments do not support FP parity, a centering theorem, a universally
@@ -374,7 +404,9 @@ uses 2,000 generated samples, so absolute estimates are noisier than common
 digits, but their values are not comparable to standard ImageNet Inception FID.
 Classifier features can also miss perceptual defects, which is why sample grids
 and multiple density/diversity statistics are retained. The CIFAR-10 experiment
-is a stress test rather than a tuned benchmark. Finally, storage is physically
+is a failed small-model stress test rather than a tuned benchmark; apparent
+rankings within that low-quality regime should not be interpreted as
+natural-image progress. Finally, storage is physically
 packed, but no binary convolution kernel is implemented; latency, operation, and
 energy improvements remain unmeasured.
 
@@ -399,8 +431,10 @@ under binary forwards reduces domain-feature distance by more than an order of
 magnitude relative to zero-shot PTQ. The same experiment also places firm limits
 on that result: FP32 remains substantially better, binary activations cause a
 further gap, mean-centering does not help the strongest condition, and packed
-storage does not imply measured acceleration. The useful conclusion is modest
-but reproducible: optimization path matters at one bit, and future binary
+storage does not imply measured acceleration. CIFAR-10 further shows that the
+present small-model recipe does not transfer into a credible natural-image
+generator. The useful conclusion is modest but reproducible: optimization path
+matters at one bit on MNIST, and future binary
 diffusion work should compare native, warm-started, and distilled training rather
 than treating zero-shot PTQ failure as the binary limit.
 
