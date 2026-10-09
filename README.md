@@ -117,6 +117,25 @@ for the FP32 state (7.22×). This is a storage measurement. The project does not
 implement packed XNOR convolution kernels and makes no measured latency or energy
 claim.
 
+## Diffuino hardware artifact
+
+Diffuino runs live class-conditioned MNIST denoising on the Arduino UNO Q's
+Qualcomm processor and streams frames to the STM32-driven 8×13 LED matrix. This
+is a separate system demonstration: its reliable interactive default is FP32 and
+is not evidence for the controlled binary-model results. The paper-linked W1A32
+model is also exportable to ONNX, but its binary-trained weights execute as
+ordinary floating-point convolution tensors rather than packed XNOR operations.
+
+Build the installable Arduino App archive with:
+
+~~~bash
+python -m apps.diffuino.package_app
+~~~
+
+The resulting dist/diffuino.zip can be copied to an UNO Q and installed with
+arduino-app-cli app import ~/diffuino.zip. Full flash, CLI, status-LED, and model
+details are in [apps/diffuino/README.md](apps/diffuino/README.md).
+
 ## Repository map
 
 - `experiments/v1_binary_study/`: matched models, training, evaluation, export,

@@ -3,11 +3,35 @@
 Diffuino runs a class-conditioned MNIST diffusion model on the Arduino UNO Q.
 The Qualcomm Linux processor performs ONNX inference and streams 8×13 grayscale
 frames over Bridge RPC; the STM32 refreshes the onboard matrix. The reliable
-interactive default is the FP32 teacher. Binary-weight checkpoints remain part
+interactive default is a separately trained FP32 generator. Binary-weight
+checkpoints remain part
 of the research workflow, but are deployed only after passing the same 10-class
 matrix validation.
 
-## UNO Q
+## Install the packaged Arduino App
+
+Build a deterministic runtime-only archive on a workstation:
+
+~~~bash
+python -m apps.diffuino.package_app
+scp dist/diffuino.zip arduino@<UNO-Q-IP>:/home/arduino/
+~~~
+
+Then import, flash, and start it from the UNO Q shell:
+
+~~~bash
+arduino-app-cli app import ~/diffuino.zip
+arduino-app-cli app start user:diffuino
+arduino-app-cli app logs user:diffuino --tail 200 --all
+~~~
+
+The archive includes only the runtime Python modules, pinned dependencies, the
+two required ONNX models, the STM32 sketch, and MANIFEST.sha256. It deliberately
+excludes PyTorch checkpoints, training utilities, seed-search tools, and tests.
+If an older app with the same ID is already installed, remove or update that app
+before importing the new archive.
+
+## Install from a repository checkout
 
 ```bash
 cd ~/monodiffuse
@@ -39,7 +63,7 @@ arduino-app-cli app logs user:diffuino --tail 200 --all
 ```
 
 ```bash
-python -m apps.diffuino.python.main --seed 11
+python -m apps.diffuino.python.main --digit 7
 ```
 
 The default conditional FP32 deployment accepts `--digit 0` through `--digit 9`
@@ -49,8 +73,8 @@ inference without Bridge. The
 final 28×28 image is saved under
 `apps/diffuino/output/latest.png`. Each run creates exactly one sample and then
 prints a held-out MNIST classifier prediction so the terminal result can be
-matched against the matrix. This prediction names the uncontrolled sample; it
-is not a ground-truth label or a generative-quality metric.
+matched against the matrix. The prediction is a diagnostic consistency check,
+not a ground-truth label or a generative-quality metric.
 
 The physical framebuffer is horizontal: 8 rows by 13 columns. Diffuino keeps
 the digit square by centering an 8×8 image within those 13 columns.
@@ -84,9 +108,10 @@ CSV under `apps/diffuino/output/`.
 The automatic `KEEP` filter combines classifier confidence with foreground-ink
 and contrast checks; the contact sheet remains the final visual check.
 
-The paper-faithful default is the 1,000-step ancestral DDPM sampler. A reduced-step
-DDIM mode is available for profiling, but the present binary checkpoint does not
-produce reliable digits with the 50-step DDIM path and it is not used for the demo.
+The sampler remains aligned with the paper's 1,000-step ancestral DDPM process,
+but the reliable interactive checkpoint is an artifact-specific,
+class-conditioned FP32 model. A reduced-step DDIM mode is available for profiling
+and is not used for the exhibit.
 
 ## Training workstation
 
@@ -94,8 +119,9 @@ produce reliable digits with the 50-step DDIM path and it is not used for the de
 venv/bin/python -m apps.diffuino.export_onnx
 ```
 
-The default export uses the best verified native uncentered/pre-activation seed-2
-checkpoint from the paper. It materializes the learned one-bit convolution weights into
-ordinary floating-point convolution tensors because ONNX Runtime does not use a
-packed XNOR kernel. The trained representation is binary-weight, but this first
-deployment does not claim binary arithmetic acceleration.
+The unconditional export uses the best verified native
+uncentered/pre-activation seed-2 checkpoint from the paper. It materializes the
+learned one-bit convolution weights into ordinary floating-point convolution
+tensors because ONNX Runtime does not use a packed XNOR kernel. The trained
+representation is binary-weight, but this deployment does not claim binary
+arithmetic acceleration.
