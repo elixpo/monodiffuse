@@ -15,6 +15,7 @@ torchvision==0.20.1+cu124
 # --- Phase 0 benchmark / eval scripts (experiments/v0_mnist) ---
 numpy
 scipy            # FID / Frechet distance (sqrtm), nearest-neighbour metrics
+pyarrow          # CIFAR-10 parquet mirror fallback when the upstream tarball is throttled
 matplotlib       # sample grids and plots
 tqdm             # progress bars
 pytest            # reproducibility/unit checks for the controlled study

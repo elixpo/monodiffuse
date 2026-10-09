@@ -54,3 +54,8 @@ python -m experiments.v1_binary_study.export \
 The adjacent JSON manifest records both payload and container sizes and identifies
 every packed and floating-point tensor. This is a storage export, not a claim that
 standard PyTorch convolutions execute packed XNOR kernels.
+
+For CIFAR-10, the loader accepts either torchvision's original extracted archive or
+the `uoft-cs/cifar10` Parquet mirror as `data/cifar10-{train,test}.parquet`. Both
+contain the canonical 50,000/10,000-image splits; the mirror avoids relying on the
+rate-limited upstream archive host.
