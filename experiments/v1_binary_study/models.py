@@ -141,6 +141,7 @@ class ModelConfig:
     centered: bool = False
     binary_activations: bool = False
     preactivation: bool = True
+    num_classes: int = 0
 
 
 class BinaryDiffusionUNet(nn.Module):
@@ -163,6 +164,11 @@ class BinaryDiffusionUNet(nn.Module):
             nn.SiLU(),
             nn.Linear(config.time_dim, config.time_dim),
         )
+        self.label_embedding = (
+            nn.Embedding(config.num_classes, config.time_dim)
+            if config.num_classes > 0
+            else None
+        )
         # Pixel-space boundary layers intentionally remain floating point.
         self.input = nn.Conv2d(config.image_channels, c, 3, padding=1)
         self.down1 = ResidualBlock(c, 2 * c, **block_args)
@@ -174,8 +180,17 @@ class BinaryDiffusionUNet(nn.Module):
         self.output_act = nn.SiLU()
         self.output = nn.Conv2d(c, config.image_channels, 3, padding=1)
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        t: torch.Tensor,
+        labels: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         time = self.time_mlp(t)
+        if self.label_embedding is not None:
+            if labels is None:
+                raise ValueError("class labels are required by this conditional model")
+            time = time + self.label_embedding(labels)
         x0 = self.input(x)
         x1 = self.down1(F.avg_pool2d(x0, 2), time)
         x2 = self.down2(F.avg_pool2d(x1, 2), time)

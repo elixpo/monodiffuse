@@ -1,0 +1,69 @@
+"""Materialize binary weights and export the Diffuino denoiser to ONNX."""
+
+from __future__ import annotations
+
+import argparse
+from dataclasses import replace
+from pathlib import Path
+
+import torch
+
+from experiments.v1_binary_study.models import BinaryDiffusionUNet, ModelConfig, QuantConv2d
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def materialized_model(checkpoint: Path) -> BinaryDiffusionUNet:
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    source_config = ModelConfig(**payload["model_config"])
+    source = BinaryDiffusionUNet(source_config)
+    source.load_state_dict(payload["model"])
+    source.eval()
+
+    deployment_config = replace(source_config, binary_weights=False, centered=False)
+    deployment = BinaryDiffusionUNet(deployment_config)
+    deployment.load_state_dict(payload["model"])
+    source_modules = dict(source.named_modules())
+    with torch.no_grad():
+        for name, target_module in deployment.named_modules():
+            source_module = source_modules[name]
+            if isinstance(source_module, QuantConv2d) and source_module.binary:
+                target_module.weight.copy_(source_module.quantized_weight())
+    return deployment.eval()
+
+
+def export(checkpoint: Path, output: Path) -> Path:
+    model = materialized_model(checkpoint)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    torch.onnx.export(
+        model,
+        (
+            torch.zeros(1, 1, 28, 28, dtype=torch.float32),
+            torch.zeros(1, dtype=torch.long),
+            torch.zeros(1, dtype=torch.long),
+        ),
+        output,
+        input_names=["image", "timestep", "label"],
+        output_names=["predicted_noise"],
+        opset_version=17,
+        do_constant_folding=True,
+    )
+    print(f"saved {output} ({output.stat().st_size} bytes)")
+    return output
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=ROOT / "apps" / "diffuino" / "models" / "mnist_conditional_w1a32.pt",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=ROOT / "apps" / "diffuino" / "models" / "mnist_conditional_w1a32.onnx",
+    )
+    arguments = parser.parse_args()
+    export(arguments.checkpoint, arguments.output)
