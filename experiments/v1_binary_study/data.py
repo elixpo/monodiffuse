@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -27,19 +28,22 @@ class ParquetCIFAR10(Dataset):
         except ImportError as error:
             raise RuntimeError("pyarrow is required to read the CIFAR-10 parquet mirror") from error
         table = parquet.read_table(path, columns=["img", "label"], memory_map=True)
-        self.images = table["img"]
-        self.labels = table["label"]
+        encoded = table["img"]
+        self.images = np.empty((len(encoded), 32, 32, 3), dtype=np.uint8)
+        for index in range(len(encoded)):
+            value = encoded[index].as_py()["bytes"]
+            self.images[index] = np.asarray(Image.open(io.BytesIO(value)).convert("RGB"))
+        self.labels = table["label"].to_numpy(zero_copy_only=False).astype(np.int64)
         self.transform = transform
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, index):
-        encoded = self.images[index].as_py()["bytes"]
-        image = Image.open(io.BytesIO(encoded)).convert("RGB")
+        image = Image.fromarray(self.images[index])
         if self.transform is not None:
             image = self.transform(image)
-        return image, self.labels[index].as_py()
+        return image, int(self.labels[index])
 
 
 def dataset(name: str, root: Path, train: bool, augment: bool = False):
