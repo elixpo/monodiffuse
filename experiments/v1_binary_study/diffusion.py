@@ -44,3 +44,23 @@ class Diffusion:
                 next_alpha_bar = self.alpha_bars[schedule[index + 1]]
                 x = next_alpha_bar.sqrt() * predicted_clean + (1 - next_alpha_bar).sqrt() * predicted_noise
         return x.clamp(-1, 1)
+
+    @torch.inference_mode()
+    def sample_ddpm(self, model, shape: tuple[int, ...], generator=None) -> torch.Tensor:
+        """Ancestral DDPM sampler using the fixed-small posterior variance."""
+        device = next(model.parameters()).device
+        x = torch.randn(shape, device=device, generator=generator)
+        alpha_bars_previous = F.pad(self.alpha_bars[:-1], (1, 0), value=1.0)
+        posterior_variance = self.betas * (1 - alpha_bars_previous) / (1 - self.alpha_bars)
+        for index in reversed(range(self.steps)):
+            t = torch.full((shape[0],), index, device=device, dtype=torch.long)
+            predicted_noise = model(x, t)
+            mean = self.alphas[index].rsqrt() * (
+                x - self.betas[index] / (1 - self.alpha_bars[index]).sqrt() * predicted_noise
+            )
+            if index:
+                noise = torch.randn(x.shape, device=device, dtype=x.dtype, generator=generator)
+                x = mean + posterior_variance[index].sqrt() * noise
+            else:
+                x = mean
+        return x.clamp(-1, 1)

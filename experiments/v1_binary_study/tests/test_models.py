@@ -26,3 +26,4 @@ def test_unet_and_sampler_shapes():
     assert model(x, torch.tensor([0, 999])).shape == x.shape
     diffusion = Diffusion(steps=10)
     assert diffusion.sample(model, x.shape, sampling_steps=2).shape == x.shape
+    assert diffusion.sample_ddpm(model, x.shape).shape == x.shape

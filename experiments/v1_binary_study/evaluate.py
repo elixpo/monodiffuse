@@ -170,11 +170,11 @@ def generated_features(args, checkpoint_path: Path, encoder, device):
     progress = tqdm(total=args.eval_samples, desc=f"sample {payload['variant']}/s{payload['seed']}")
     while remaining:
         batch = min(args.eval_batch_size, remaining)
-        images = diffusion.sample(
-            model,
-            (batch, config.image_channels, DATASET_INFO[args.dataset]["size"], DATASET_INFO[args.dataset]["size"]),
-            args.sampling_steps,
-            generator,
+        shape = (batch, config.image_channels, DATASET_INFO[args.dataset]["size"], DATASET_INFO[args.dataset]["size"])
+        images = (
+            diffusion.sample_ddpm(model, shape, generator)
+            if args.sampler == "ddpm"
+            else diffusion.sample(model, shape, args.sampling_steps, generator)
         )
         if len(preview) < 64:
             preview.append(images.cpu())
@@ -333,6 +333,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--eval-batch-size", type=int, default=128)
     result.add_argument("--sample-seed", type=int, default=4242)
     result.add_argument("--sampling-steps", type=int, default=50)
+    result.add_argument("--sampler", choices=("ddpm", "ddim"), default="ddpm")
     result.add_argument("--diffusion-steps", type=int, default=1000)
     result.add_argument("--variants", default="")
     result.add_argument("--overwrite", action="store_true")
