@@ -77,5 +77,7 @@ def loader(name: str, root: Path, train: bool, batch_size: int, workers: int, se
         pin_memory=torch.cuda.is_available(),
         drop_last=train,
         generator=generator,
-        persistent_workers=workers > 0,
+        # Releasing workers after each pass prevents train and validation loader
+        # pools from retaining duplicate decoded CIFAR arrays simultaneously.
+        persistent_workers=False,
     )
