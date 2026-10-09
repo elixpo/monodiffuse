@@ -281,10 +281,16 @@ def evaluate_suite(args) -> None:
         allowed = set(args.variants.split(","))
         checkpoints = [path for path in checkpoints if path.parent.parent.name in allowed]
     for checkpoint_path in checkpoints:
+        metric_path = checkpoint_path.parent / "metrics.json"
+        if args.resume and metric_path.exists():
+            with metric_path.open() as handle:
+                rows.append(json.load(handle))
+            print(f"reuse {metric_path}")
+            continue
         fake_feature, fake_probability, payload = generated_features(args, checkpoint_path, encoder, device)
         metrics = distribution_metrics(real_feature, real_probability, fake_feature, fake_probability)
         row = {"dataset": args.dataset, "variant": payload["variant"], "seed": payload["seed"], **metrics}
-        atomic_json(checkpoint_path.parent / "metrics.json", row)
+        atomic_json(metric_path, row)
         rows.append(row)
     result_path = args.artifacts / args.dataset / "results.csv"
     with result_path.open("w", newline="") as handle:
@@ -336,6 +342,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--sampler", choices=("ddpm", "ddim"), default="ddpm")
     result.add_argument("--diffusion-steps", type=int, default=1000)
     result.add_argument("--variants", default="")
+    result.add_argument("--resume", action="store_true", help="Reuse existing per-checkpoint metric files")
     result.add_argument("--overwrite", action="store_true")
     return result
 
