@@ -7,12 +7,12 @@
     "train_loss": 0.06216787234067917
   },
   "gaussian_noise": {
-    "class_js_divergence": 0.4704805026710259,
+    "class_js_divergence": 0.4708856067739206,
     "coverage": 0.0005000000237487257,
-    "density": 0.007,
-    "feature_fid": 607.8669278686821,
-    "feature_kid": 4.659637446037577,
-    "mean_classifier_confidence": 0.9639571905136108
+    "density": 0.0079,
+    "feature_fid": 607.8646510474725,
+    "feature_kid": 4.668094217430871,
+    "mean_classifier_confidence": 0.963794469833374
   },
   "real_real": {
     "class_js_divergence": 0.0020268169200081338,
