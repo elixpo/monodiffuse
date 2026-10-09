@@ -60,7 +60,7 @@ The 8×8 digit conversion applies per-frame contrast stretching. Digits `0`,
 holes and stroke gaps survive; `1`, `4`, `5`, and `7` retain smoother bilinear
 downsampling.
 
-The visually audited default seeds are `0:15`, `1:16`, `2:10`, `3:22`, `4:0`,
+The visually audited default seeds are `0:15`, `1:16`, `2:50`, `3:22`, `4:0`,
 `5:0`, `6:12`, `7:4`, `8:10`, and `9:18`.
 All digits retain eight grayscale levels; no destructive binary threshold is
 applied.
