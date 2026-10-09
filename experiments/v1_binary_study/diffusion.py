@@ -37,7 +37,6 @@ class Diffusion:
             alpha_bar = self.alpha_bars[t_value]
             predicted_noise = model(x, t)
             predicted_clean = (x - (1 - alpha_bar).sqrt() * predicted_noise) / alpha_bar.sqrt()
-            predicted_clean = predicted_clean.clamp(-1, 1)
             if index == len(schedule) - 1:
                 x = predicted_clean
             else:
