@@ -32,9 +32,7 @@ def test_auto_contrast_uses_full_brightness_for_a_faint_stroke():
     assert np.count_nonzero(frame) > 0
 
 
-def test_digit_three_uses_binary_display_levels_only():
+def test_digit_three_keeps_grayscale_without_hard_thresholding():
     state = np.linspace(-1, 1, 28 * 28, dtype=np.float32).reshape(1, 1, 28, 28)
-    regular = state_to_matrix(state)
     three = state_to_matrix(state, digit=3)
-    assert np.any((regular > 0) & (regular < 7))
-    assert set(np.unique(three)) <= {0, 7}
+    assert np.any((three > 0) & (three < 7))

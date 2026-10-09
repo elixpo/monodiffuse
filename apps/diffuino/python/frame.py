@@ -27,7 +27,8 @@ def state_to_matrix(
     pixels = np.clip((image + 1.0) * 127.5, 0, 255).astype(np.uint8)
     resized = np.asarray(
         Image.fromarray(pixels, mode="L").resize(
-            (DIGIT_SIZE, DIGIT_SIZE), Image.Resampling.BILINEAR
+            (DIGIT_SIZE, DIGIT_SIZE),
+            Image.Resampling.NEAREST if digit == 3 else Image.Resampling.BILINEAR,
         ),
         dtype=np.float32,
     )
@@ -36,10 +37,6 @@ def state_to_matrix(
         if high - low >= 1.0:
             resized = np.clip((resized - low) * (255.0 / (high - low)), 0, 255)
     quantized = np.rint(resized * (levels - 1) / 255.0).astype(np.uint8)
-    if digit == 3:
-        # At 8x8, intermediate grayscale levels optically bridge the openings
-        # in a three. A display-only hard threshold preserves its two cuts.
-        quantized = np.where(quantized >= levels // 2, levels - 1, 0).astype(np.uint8)
     frame = np.zeros((ROWS, COLS), dtype=np.uint8)
     frame[:, LEFT_MARGIN : LEFT_MARGIN + DIGIT_SIZE] = quantized
     return frame
