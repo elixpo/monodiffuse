@@ -33,7 +33,32 @@ arduino-app-cli properties set default user:diffuino
 
 The UNO Q app supervisor will then launch both the STM32 sketch and Linux
 inference container after every boot. A separate systemd unit is unnecessary and
-would not manage the two processors as one application.
+would not manage the two processors as one application. In particular, do not
+run `arduino-app-cli` from a root-owned custom service: the CLI is intended to
+run as the board's UID-1000 `arduino` user. Diffuino waits up to two minutes for
+the router and freshly booted STM32 RPC methods before failing, so normal Linux,
+container, and microcontroller startup ordering does not terminate appliance
+mode.
+
+If an older custom service was installed, return startup ownership to the
+Arduino App supervisor and reboot:
+
+~~~bash
+sudo systemctl disable --now diffuino.service 2>/dev/null || true
+arduino-app-cli properties set default user:diffuino
+sudo reboot
+~~~
+
+After reconnecting, verify the persistent appliance rather than starting a
+second copy:
+
+~~~bash
+arduino-app-cli app ps
+arduino-app-cli app logs user:diffuino --tail 200 --all
+~~~
+
+The successful boot log ends with `selector=ready ...`; at that point the
+matrix shows the smiley and the process remains blocked waiting for D6.
 
 The archive includes only the runtime Python modules, pinned dependencies, the
 two required ONNX models, the STM32 sketch, and MANIFEST.sha256. It deliberately

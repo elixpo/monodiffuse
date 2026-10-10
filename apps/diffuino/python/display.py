@@ -6,17 +6,44 @@ import time
 
 
 class MatrixDisplay:
-    def __init__(self, timeout: float = 5.0, ready_timeout: float = 20.0):
+    def __init__(
+        self,
+        timeout: float = 5.0,
+        ready_timeout: float = 120.0,
+        retry_interval: float = 0.5,
+    ):
         from arduino.router_bridge import Bridge
 
         self.timeout = timeout
         self.ready_timeout = ready_timeout
+        self.retry_interval = retry_interval
         self.bridge = Bridge()
 
     def __enter__(self) -> "MatrixDisplay":
-        if not self.bridge.connect(timeout=self.timeout):
-            raise RuntimeError("Arduino Router did not become available")
-        return self
+        deadline = time.monotonic() + self.ready_timeout
+        attempts = 0
+        last_error = None
+        while True:
+            attempts += 1
+            try:
+                if self.bridge.connect(timeout=self.timeout):
+                    if attempts > 1:
+                        print(
+                            f"bridge=connected attempts={attempts}",
+                            flush=True,
+                        )
+                    return self
+                last_error = RuntimeError("Bridge.connect returned false")
+            except Exception as error:
+                last_error = error
+
+            if attempts == 1:
+                print("bridge=waiting_for_router", flush=True)
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    "Arduino Router did not become available before the startup timeout"
+                ) from last_error
+            time.sleep(self.retry_interval)
 
     def _call(self, method: str, *parameters):
         deadline = time.monotonic() + self.ready_timeout
