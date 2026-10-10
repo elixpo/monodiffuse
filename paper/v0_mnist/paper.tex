@@ -317,9 +317,9 @@ conditioning, scales, and accumulation remain floating point.
 
 \begin{figure}[t]
 \centering
-\subfloat[FP32]{\includegraphics[width=.31\columnwidth]{../../artifacts/v1_binary_study/mnist/fp/seed_0/samples.png}}\hfill
-\subfloat[Native W1A32]{\includegraphics[width=.31\columnwidth]{../../artifacts/v1_binary_study/mnist/native_uncentered_pre/seed_0/samples.png}}\hfill
-\subfloat[PTQ W1A32]{\includegraphics[width=.31\columnwidth]{../../artifacts/v1_binary_study/mnist/ptq_uncentered/seed_0/samples.png}}
+\subfloat[FP32]{\includegraphics[width=.31\columnwidth]{figures/results/mnist-fp.png}}\hfill
+\subfloat[Native W1A32]{\includegraphics[width=.31\columnwidth]{figures/results/mnist-native-w1a32.png}}\hfill
+\subfloat[PTQ W1A32]{\includegraphics[width=.31\columnwidth]{figures/results/mnist-ptq-w1a32.png}}
 \caption{MNIST samples from the fixed evaluation seed. The native binary model
 retains digit-like structure but is visibly below FP32; zero-shot PTQ collapses.}
 \label{fig:mnist}
@@ -375,10 +375,10 @@ that this small architecture and budget are inadequate for that claim.
 
 \begin{figure}[t]
 \centering
-\subfloat[FP32]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/fp/seed_0/samples.png}}\hfill
-\subfloat[Native W1A32]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/native_uncentered_pre/seed_0/samples.png}}\hfill
-\subfloat[W1A1 core]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/native_w1a1_core/seed_0/samples.png}}\hfill
-\subfloat[PTQ W1A32]{\includegraphics[width=.23\columnwidth]{../../artifacts/v1_binary_study/cifar10/ptq_centered/seed_0/samples.png}}
+\subfloat[FP32]{\includegraphics[width=.23\columnwidth]{figures/results/cifar10-fp.png}}\hfill
+\subfloat[Native W1A32]{\includegraphics[width=.23\columnwidth]{figures/results/cifar10-native-w1a32.png}}\hfill
+\subfloat[W1A1 core]{\includegraphics[width=.23\columnwidth]{figures/results/cifar10-native-w1a1.png}}\hfill
+\subfloat[PTQ W1A32]{\includegraphics[width=.23\columnwidth]{figures/results/cifar10-ptq-w1a32.png}}
 \caption{CIFAR-10 samples from seed 0. Even FP32 produces coarse color blocks;
 the stress test is consequently not evidence of natural-image fidelity.}
 \label{fig:cifar}
@@ -443,25 +443,23 @@ breadboard circuit. This human interface does not alter the sampler or any
 reported metric.
 
 \IfFileExists{figures/diffuino/diffuino-board.jpg}{
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/diffuino/diffuino-board.jpg}
-\caption{Diffuino running on the Arduino UNO Q. The Qualcomm processor performs
-ONNX inference while the STM32 drives the $8\times13$ LED matrix and auxiliary
-RGB status LEDs. This artifact is separate from the controlled-study metrics.}
-\label{fig:diffuino}
-\end{figure}
-}{}
-
-\IfFileExists{figures/diffuino/diffuino-selector.pdf}{
+\IfFileExists{figures/diffuino/diffuino-selector.png}{
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.98\textwidth]{figures/diffuino/diffuino-selector.pdf}
-\caption{Diffuino selector schematic. The four BCD inputs are visible on D2--D5;
-the combinational validity interlock suppresses invalid decimal codes before the
-generate request reaches D6, while D7 independently re-arms the appliance.}
-\label{fig:diffuino-selector}
+\subfloat[Physical Diffuino prototype.]{%
+  \includegraphics[width=0.32\textwidth]{figures/diffuino/diffuino-board.jpg}}
+\hfill
+\subfloat[Complete BCD selector and validity-interlock schematic.]{%
+  \includegraphics[width=0.65\textwidth]{figures/diffuino/diffuino-selector.png}}
+\caption{Diffuino hardware artifact. The Qualcomm processor performs ONNX
+inference while the STM32 drives the $8\times13$ matrix and status LEDs. Four
+BCD inputs connect to D2--D5; the combinational interlock suppresses invalid
+decimal codes before the generate request reaches D6, and D7 independently
+re-arms the appliance. This artifact is separate from the controlled-study
+metrics.}
+\label{fig:diffuino}
 \end{figure*}
+}{}
 }{}
 
 \section{Limitations}
