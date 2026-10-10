@@ -443,11 +443,17 @@ breadboard circuit. This human interface does not alter the sampler or any
 reported metric.
 
 \IfFileExists{figures/diffuino/diffuino-board.jpg}{
+\IfFileExists{figures/diffuino/diffuino-board-2.jpg}{
 \IfFileExists{figures/diffuino/diffuino-selector.png}{
 \begin{figure*}[t]
 \centering
-\subfloat[Physical Diffuino prototype.]{%
-  \includegraphics[width=0.32\textwidth]{figures/diffuino/diffuino-board.jpg}}
+\subfloat[Physical prototype: wider setup view (top) and LED-matrix close-up
+(bottom).]{%
+  \begin{minipage}[b]{0.32\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/diffuino/diffuino-board-2.jpg}\\[0.5ex]
+  \includegraphics[width=\linewidth]{figures/diffuino/diffuino-board.jpg}
+  \end{minipage}}
 \hfill
 \subfloat[Complete BCD selector and validity-interlock schematic.]{%
   \includegraphics[width=0.65\textwidth]{figures/diffuino/diffuino-selector.png}}
@@ -459,6 +465,7 @@ re-arms the appliance. This artifact is separate from the controlled-study
 metrics.}
 \label{fig:diffuino}
 \end{figure*}
+}{}
 }{}
 }{}
 
