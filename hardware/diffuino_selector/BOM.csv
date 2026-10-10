@@ -3,9 +3,9 @@ U1,1,74AHC1G32,Single 2-input OR gate
 U2 U4,2,74AHC1G08,Single 2-input AND gate
 U3,1,74AHC1G04,Single inverter
 Q1,1,2N3904,NPN transistor for trigger LED buffering
-SW1,1,4-position DIP switch,BCD selector
-SW2,1,SPST momentary,Generate button
-SW3,1,SPST momentary,Reset button
+SW1-SW4,4,SPST DIP switch sections,BCD selector bits
+SW5,1,SPST momentary,Generate button
+SW6,1,SPST momentary,Reset button
 R1-R4 R13 R17,6,10 kOhm,Input pull-down resistors
 R5-R8 R14 R18,6,1 kOhm,UNO Q GPIO series-protection resistors
 R9-R12 R16,5,1 kOhm,LED current-limiting resistors
