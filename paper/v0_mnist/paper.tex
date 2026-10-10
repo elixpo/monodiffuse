@@ -431,6 +431,17 @@ arithmetic acceleration, latency reduction, or energy savings. The installable
 app, packaging script, model files, and firmware are included with the released
 code.
 
+The exhibit accepts a decimal class from a four-switch BCD selector on STM32
+pins D2--D5. Before a debounced generate pulse reaches D6, external logic checks
+$\mathrm{VALID}=\neg[b_3\wedge(b_2\vee b_1)]$, so codes 10--15 are rejected in
+hardware; firmware retains an independent range check. During sampling, further
+triggers are ignored and the selected value is latched. The generated digit
+remains on the display until a separate debounced D7 reset returns the system to
+its ready state. The released KiCad design adds RC filtering, per-input series
+protection, buffered indication, and local supply decoupling to the demonstrated
+breadboard circuit. This human interface does not alter the sampler or any
+reported metric.
+
 \IfFileExists{figures/diffuino/diffuino-board.jpg}{
 \begin{figure}[t]
 \centering
@@ -439,6 +450,17 @@ code.
 ONNX inference while the STM32 drives the $8\times13$ LED matrix and auxiliary
 RGB status LEDs. This artifact is separate from the controlled-study metrics.}
 \label{fig:diffuino}
+\end{figure}
+}{}
+
+\IfFileExists{figures/diffuino/diffuino-selector.pdf}{
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/diffuino/diffuino-selector.pdf}
+\caption{Diffuino selector schematic. The four BCD inputs are visible on D2--D5;
+the combinational validity interlock suppresses invalid decimal codes before the
+generate request reaches D6, while D7 independently re-arms the appliance.}
+\label{fig:diffuino-selector}
 \end{figure}
 }{}
 

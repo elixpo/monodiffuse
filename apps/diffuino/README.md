@@ -116,9 +116,12 @@ Connect the four BCD bits and trigger as follows:
 | D6 | active-high request button |
 | D7 | active-high reset button |
 
-All six inputs use the STM32's internal pull-down. Drive them with
-board-compatible 3.3 V logic and share ground with the selector circuit. Connect
-each pushbutton between its input and 3.3 V. Set D2--D5 before pressing D6.
+For a direct minimal test, all six inputs use the STM32's internal pull-down and
+can be driven with 3.3 V logic while sharing ground. The finalized external
+selector instead uses rail-to-rail 5 V switches, 10 kOhm pull-downs, RC input
+filters, and 1 kOhm series protection. The UNO Q datasheet marks these D2--D7
+STM32 header pins as 5 V tolerant; this does not apply to the board's 1.8 V MPU
+GPIO. Set D2--D5 before pressing D6.
 
 The STM32 debounces D6 for 40 ms, samples D2--D5 once on the accepted rising
 edge, and latches that value for the whole diffusion run. Changes on the BCD
@@ -130,6 +133,12 @@ stays locked and the generated digit remains on the matrix indefinitely. A
 debounced D7 press resets the display to the smiling face and permits the next
 D6 request. Reset presses during active diffusion are ignored; press D7 after
 the terminal reports that it is waiting for reset.
+
+The complete reproducible circuit is in
+[`hardware/diffuino_selector`](../../hardware/diffuino_selector/README.md), with
+editable KiCad source, PDF/SVG exports, BOM, truth table, and a committed ERC
+report containing zero violations. The publication circuit uses single-gate
+74AHC parts so no unused CMOS inputs are left floating.
 
 The service log makes the hardware selection explicit:
 

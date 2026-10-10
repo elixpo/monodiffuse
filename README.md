@@ -135,6 +135,9 @@ python -m apps.diffuino.package_app
 The resulting dist/diffuino.zip can be copied to an UNO Q and installed with
 arduino-app-cli app import ~/diffuino.zip. Full flash, CLI, status-LED, and model
 details are in [apps/diffuino/README.md](apps/diffuino/README.md).
+The reproducible BCD-selector circuit, KiCad source, zero-warning ERC report,
+bill of materials, and exhaustive truth table are in
+[hardware/diffuino_selector](hardware/diffuino_selector/README.md).
 
 ## Repository map
 
@@ -143,6 +146,8 @@ details are in [apps/diffuino/README.md](apps/diffuino/README.md).
 - `artifacts/v1_binary_study/`: per-seed checkpoints, hashes, histories, metrics,
   controls, summaries, and sample grids;
 - `paper/v0_mnist/paper.tex`: the paper source; and
+- `hardware/diffuino_selector/`: KiCad source and publication exports for the
+  BCD input, validity gate, generate trigger, and reset circuit; and
 - `experiments/v0_mnist/`: archived exploratory scripts and figures, not the
   source of the controlled-study results.
 
