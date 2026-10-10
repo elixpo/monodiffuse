@@ -103,7 +103,7 @@ applied.
 
 When the packaged app starts without a digit argument, it enters appliance mode
 and loads the ONNX model only once. After Linux inference and Bridge RPC are
-ready, the matrix displays a centered D and RGB LED 4 turns green.
+ready, the matrix displays a smiling face and RGB LED 4 turns green.
 
 Connect the four BCD bits and trigger as follows:
 
@@ -114,10 +114,11 @@ Connect the four BCD bits and trigger as follows:
 | D4 | bit 2 |
 | D5 | bit 3, most significant bit |
 | D6 | active-high request button |
+| D7 | active-high reset button |
 
-All five inputs use the STM32's internal pull-down. Drive them with
+All six inputs use the STM32's internal pull-down. Drive them with
 board-compatible 3.3 V logic and share ground with the selector circuit. Connect
-the pushbutton between D6 and 3.3 V. Set D2--D5 before pressing D6.
+each pushbutton between its input and 3.3 V. Set D2--D5 before pressing D6.
 
 The STM32 debounces D6 for 40 ms, samples D2--D5 once on the accepted rising
 edge, and latches that value for the whole diffusion run. Changes on the BCD
@@ -125,15 +126,18 @@ pins and further D6 edges are ignored while busy. Values 0--9 start exactly one
 generation. The external AND/OR/NOT validity logic prevents values 10--15 from
 asserting a request; a software range check remains only as a wiring or logic
 fault guard. After the final image has been held for 1.2 seconds, the selector
-rearms only after D6 is released. The green ready LED and D then return.
+stays locked and the generated digit remains on the matrix indefinitely. A
+debounced D7 press resets the display to the smiling face and permits the next
+D6 request. Reset presses during active diffusion are ignored; press D7 after
+the terminal reports that it is waiting for reset.
 
 The service log makes the hardware selection explicit:
 
 ~~~text
-selector=ready bcd_pins=2,3,4,5 trigger_pin=6 bit_order=lsb_to_msb
+selector=ready bcd_pins=2,3,4,5 trigger_pin=6 reset_pin=7 bit_order=lsb_to_msb
 bcd_selected=3
 requested_digit=3 generated_digit=3 classifier_confidence=... match=yes
-selector=rearming_after_release
+selector=locked_waiting_reset reset_pin=7
 ~~~
 
 During matrix inference, the four onboard RGB LEDs expose live system state:

@@ -46,7 +46,7 @@ def parser() -> argparse.ArgumentParser:
         "--result-hold",
         type=float,
         default=1.2,
-        help="seconds to hold a BCD-triggered result before re-arming",
+        help="cooldown before the reset button is accepted",
     )
     result.add_argument(
         "--poll-interval",
@@ -166,7 +166,7 @@ def run_selector_service(
     with MatrixDisplay() as display:
         display.selector_ready()
         print(
-            "selector=ready bcd_pins=2,3,4,5 trigger_pin=6 "
+            "selector=ready bcd_pins=2,3,4,5 trigger_pin=6 reset_pin=7 "
             "bit_order=lsb_to_msb",
             flush=True,
         )
@@ -197,7 +197,7 @@ def run_selector_service(
                 )
             time.sleep(args.result_hold)
             display.complete_request(success)
-            print("selector=rearming_after_release", flush=True)
+            print("selector=locked_waiting_reset reset_pin=7", flush=True)
 
 
 def run(args: argparse.Namespace) -> None:

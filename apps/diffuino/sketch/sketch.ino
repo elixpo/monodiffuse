@@ -14,6 +14,7 @@ constexpr size_t FRAME_COLS = 13;
 constexpr size_t FRAME_SIZE = FRAME_ROWS * FRAME_COLS;
 constexpr uint8_t BCD_PINS[] = {2, 3, 4, 5};
 constexpr uint8_t TRIGGER_PIN = 6;
+constexpr uint8_t RESET_PIN = 7;
 constexpr unsigned long DEBOUNCE_MS = 40;
 
 uint8_t frame[FRAME_SIZE] = {0};
@@ -21,10 +22,14 @@ bool frame_dirty = false;
 int pending_digit = -1;
 bool linux_ready = false;
 bool selector_busy = false;
-bool release_requested = false;
+bool request_complete = false;
+bool trigger_armed = true;
 bool raw_button = false;
 bool stable_button = false;
 unsigned long last_button_change_ms = 0;
+bool raw_reset = false;
+bool stable_reset = false;
+unsigned long last_reset_change_ms = 0;
 
 void set_led3_color(int red, int green, int blue) {
   analogWrite(LED3_R, constrain(red, 0, 255));
@@ -57,22 +62,21 @@ void queue_frame(const uint8_t* next_frame) {
 }
 
 void show_ready() {
-  // A centered 5x7 "D" indicates that Linux, ONNX Runtime, and RPC are ready.
-  static const uint8_t glyph[7][5] = {
-    {1, 1, 1, 1, 0},
-    {1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 1},
-    {1, 1, 1, 1, 0},
-  };
+  // The idle smile means the complete Linux/STM32 appliance is ready.
   uint8_t ready_frame[FRAME_SIZE] = {0};
-  constexpr size_t left = 4;
-  for (size_t row = 0; row < 7; ++row) {
-    for (size_t column = 0; column < 5; ++column) {
-      ready_frame[row * FRAME_COLS + left + column] = glyph[row][column] ? 6 : 0;
-    }
+  ready_frame[2 * FRAME_COLS + 3] = 7;
+  ready_frame[2 * FRAME_COLS + 9] = 7;
+  ready_frame[4 * FRAME_COLS + 2] = 6;
+  ready_frame[4 * FRAME_COLS + 10] = 6;
+  ready_frame[5 * FRAME_COLS + 3] = 6;
+  ready_frame[5 * FRAME_COLS + 9] = 6;
+  ready_frame[6 * FRAME_COLS + 4] = 6;
+  ready_frame[6 * FRAME_COLS + 5] = 6;
+  ready_frame[6 * FRAME_COLS + 6] = 6;
+  ready_frame[6 * FRAME_COLS + 7] = 6;
+  ready_frame[6 * FRAME_COLS + 8] = 6;
+  for (size_t column = 5; column <= 7; ++column) {
+    ready_frame[7 * FRAME_COLS + column] = 3;
   }
   queue_frame(ready_frame);
   set_led3_color(0, 0, 0);
@@ -93,15 +97,11 @@ void selector_ready() {
   k_mutex_lock(&selector_mutex, K_FOREVER);
   linux_ready = true;
   pending_digit = -1;
-  // Recover cleanly if the Linux process restarted during a request. A trigger
-  // that is still held must be released before a new rising edge is accepted.
-  selector_busy = stable_button;
-  release_requested = stable_button;
-  bool can_show_ready = !stable_button;
+  selector_busy = false;
+  request_complete = false;
+  trigger_armed = !stable_button;
   k_mutex_unlock(&selector_mutex);
-  if (can_show_ready) {
-    show_ready();
-  }
+  show_ready();
 }
 
 int poll_digit() {
@@ -115,16 +115,8 @@ int poll_digit() {
 void complete_request(bool success) {
   set_led4_color(!success, success, false);
   k_mutex_lock(&selector_mutex, K_FOREVER);
-  release_requested = true;
-  bool already_released = !stable_button;
-  if (already_released) {
-    selector_busy = false;
-    release_requested = false;
-  }
+  request_complete = true;
   k_mutex_unlock(&selector_mutex);
-  if (already_released) {
-    show_ready();
-  }
 }
 
 void setup() {
@@ -140,6 +132,7 @@ void setup() {
     pinMode(pin, INPUT_PULLDOWN);
   }
   pinMode(TRIGGER_PIN, INPUT_PULLDOWN);
+  pinMode(RESET_PIN, INPUT_PULLDOWN);
 
   matrix.begin();
   matrix.setGrayscaleBits(3);
@@ -178,28 +171,50 @@ void loop() {
   k_mutex_lock(&selector_mutex, K_FOREVER);
   bool stable_button_snapshot = stable_button;
   k_mutex_unlock(&selector_mutex);
-  bool show_ready_after_release = false;
   if (raw_button != stable_button_snapshot &&
       now - last_button_change_ms >= DEBOUNCE_MS) {
     bool pressed = raw_button;
     k_mutex_lock(&selector_mutex, K_FOREVER);
     stable_button = pressed;
     if (pressed) {
-      if (linux_ready && !selector_busy) {
+      if (linux_ready && !selector_busy && trigger_armed) {
         pending_digit = read_bcd();
         selector_busy = true;
+        request_complete = false;
+        trigger_armed = false;
         set_led4_color(false, false, true);
       }
-    } else {
-      show_ready_after_release = selector_busy && release_requested;
-      if (show_ready_after_release) {
-        selector_busy = false;
-        release_requested = false;
-      }
+    } else if (!selector_busy) {
+      trigger_armed = true;
     }
     k_mutex_unlock(&selector_mutex);
   }
-  if (show_ready_after_release) {
+
+  bool observed_reset = digitalRead(RESET_PIN) == HIGH;
+  if (observed_reset != raw_reset) {
+    raw_reset = observed_reset;
+    last_reset_change_ms = now;
+  }
+  k_mutex_lock(&selector_mutex, K_FOREVER);
+  bool stable_reset_snapshot = stable_reset;
+  k_mutex_unlock(&selector_mutex);
+  bool reset_accepted = false;
+  if (raw_reset != stable_reset_snapshot &&
+      now - last_reset_change_ms >= DEBOUNCE_MS) {
+    bool reset_pressed = raw_reset;
+    k_mutex_lock(&selector_mutex, K_FOREVER);
+    stable_reset = reset_pressed;
+    if (reset_pressed && linux_ready &&
+        (!selector_busy || request_complete)) {
+      pending_digit = -1;
+      selector_busy = false;
+      request_complete = false;
+      trigger_armed = !stable_button;
+      reset_accepted = true;
+    }
+    k_mutex_unlock(&selector_mutex);
+  }
+  if (reset_accepted) {
     show_ready();
   }
 
