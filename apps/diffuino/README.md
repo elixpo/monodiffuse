@@ -25,6 +25,16 @@ arduino-app-cli app start user:diffuino
 arduino-app-cli app logs user:diffuino --tail 200 --all
 ~~~
 
+Make Diffuino the board's startup app after verifying one manual run:
+
+~~~bash
+arduino-app-cli properties set default user:diffuino
+~~~
+
+The UNO Q app supervisor will then launch both the STM32 sketch and Linux
+inference container after every boot. A separate systemd unit is unnecessary and
+would not manage the two processors as one application.
+
 The archive includes only the runtime Python modules, pinned dependencies, the
 two required ONNX models, the STM32 sketch, and MANIFEST.sha256. It deliberately
 excludes PyTorch checkpoints, training utilities, seed-search tools, and tests.
@@ -88,6 +98,43 @@ The visually audited default seeds are `0:15`, `1:16`, `2:50`, `3:22`, `4:0`,
 `5:0`, `6:12`, `7:4`, `8:10`, and `9:18`.
 All digits retain eight grayscale levels; no destructive binary threshold is
 applied.
+
+## Hardware BCD selector
+
+When the packaged app starts without a digit argument, it enters appliance mode
+and loads the ONNX model only once. After Linux inference and Bridge RPC are
+ready, the matrix displays a centered D and RGB LED 4 turns green.
+
+Connect the four BCD bits and trigger as follows:
+
+| UNO Q pin | Function |
+| --- | --- |
+| D2 | bit 0, least significant bit |
+| D3 | bit 1 |
+| D4 | bit 2 |
+| D5 | bit 3, most significant bit |
+| D6 | active-high request button |
+
+All five inputs use the STM32's internal pull-down. Drive them with
+board-compatible 3.3 V logic and share ground with the selector circuit. Connect
+the pushbutton between D6 and 3.3 V. Set D2--D5 before pressing D6.
+
+The STM32 debounces D6 for 40 ms, samples D2--D5 once on the accepted rising
+edge, and latches that value for the whole diffusion run. Changes on the BCD
+pins and further D6 edges are ignored while busy. Values 0--9 start exactly one
+generation. The external AND/OR/NOT validity logic prevents values 10--15 from
+asserting a request; a software range check remains only as a wiring or logic
+fault guard. After the final image has been held for 1.2 seconds, the selector
+rearms only after D6 is released. The green ready LED and D then return.
+
+The service log makes the hardware selection explicit:
+
+~~~text
+selector=ready bcd_pins=2,3,4,5 trigger_pin=6 bit_order=lsb_to_msb
+bcd_selected=3
+requested_digit=3 generated_digit=3 classifier_confidence=... match=yes
+selector=rearming_after_release
+~~~
 
 During matrix inference, the four onboard RGB LEDs expose live system state:
 LED 1 shows CPU load, LED 2 shows RAM load, LED 3 fades from blue to magenta as

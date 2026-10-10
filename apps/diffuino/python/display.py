@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import time
 
-from arduino.router_bridge import Bridge
-
 
 class MatrixDisplay:
     def __init__(self, timeout: float = 5.0, ready_timeout: float = 20.0):
+        from arduino.router_bridge import Bridge
+
         self.timeout = timeout
         self.ready_timeout = ready_timeout
         self.bridge = Bridge()
@@ -18,18 +18,17 @@ class MatrixDisplay:
             raise RuntimeError("Arduino Router did not become available")
         return self
 
-    def _call(self, method: str, *parameters) -> None:
+    def _call(self, method: str, *parameters):
         deadline = time.monotonic() + self.ready_timeout
         while True:
             try:
-                self.bridge.call(method, *parameters, timeout=self.timeout)
-                return
+                return self.bridge.call(method, *parameters, timeout=self.timeout)
             except Exception as error:
                 # The Linux router socket becomes available before a freshly
                 # flashed sketch has necessarily registered its RPC methods.
                 # Treat that short window as startup, not a fatal missing-
                 # firmware error.
-                if "method draw not available" not in str(error):
+                if f"method {method} not available" not in str(error):
                     raise
                 if time.monotonic() >= deadline:
                     raise RuntimeError(
@@ -45,6 +44,15 @@ class MatrixDisplay:
 
     def set_led4_color(self, red: bool, green: bool, blue: bool) -> None:
         self._call("set_led4_color", red, green, blue)
+
+    def selector_ready(self) -> None:
+        self._call("selector_ready")
+
+    def poll_digit(self) -> int:
+        return int(self._call("poll_digit"))
+
+    def complete_request(self, success: bool) -> None:
+        self._call("complete_request", success)
 
     def clear(self) -> None:
         self.draw(bytes(104))
